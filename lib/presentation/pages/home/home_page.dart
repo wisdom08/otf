@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
-import '../../core/theme/app_theme.dart';
-import '../../core/constants/app_constants.dart';
+import '../services/local_storage_service.dart';
+import '../services/goal_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,18 +12,45 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
+  List<Goal> _goals = [];
+  int _streak = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await LocalStorageService.init();
+    setState(() {
+      _goals = GoalService.getGoals();
+      _streak = LocalStorageService.getStreak();
+    });
+  }
 
   final List<Widget> _pages = [
-    const HomeTab(),
-    const GoalTab(),
-    const FeedTab(),
-    const ProfileTab(),
+    // HomeTab은 동적으로 생성
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          HomeTab(
+            goals: _goals,
+            streak: _streak,
+            onGoalAdded: _addGoal,
+            onGoalCompleted: _completeGoal,
+            onRefresh: _loadData,
+          ),
+          const GoalTab(),
+          const FeedTab(),
+          const ProfileTab(),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -33,8 +59,8 @@ class _HomePageState extends State<HomePage> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppTheme.primaryColor,
-        unselectedItemColor: AppTheme.textTertiary,
+        selectedItemColor: Colors.indigo,
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -60,28 +86,44 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  Future<void> _addGoal(String title, String description) async {
+    await GoalService.addGoal(title, description);
+    await _loadData();
+  }
+
+  Future<void> _completeGoal(String goalId) async {
+    await GoalService.completeGoal(goalId);
+    await _loadData();
+  }
 }
 
 class HomeTab extends StatelessWidget {
-  const HomeTab({super.key});
+  final List<Goal> goals;
+  final int streak;
+  final Function(String, String) onGoalAdded;
+  final Function(String) onGoalCompleted;
+  final VoidCallback onRefresh;
+
+  const HomeTab({
+    super.key,
+    required this.goals,
+    required this.streak,
+    required this.onGoalAdded,
+    required this.onGoalCompleted,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           '오늘의 목표',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // TODO: 알림 페이지로 이동
-            },
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: onRefresh),
         ],
       ),
       body: SingleChildScrollView(
@@ -94,29 +136,25 @@ class HomeTab extends StatelessWidget {
             SizedBox(height: 24.h),
 
             // 오늘의 목표 섹션
-            Text(
+            const Text(
               '오늘의 목표는?',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16.h),
 
             // 목표 추가 버튼
-            _buildAddGoalButton(),
+            _buildAddGoalButton(context),
             SizedBox(height: 24.h),
 
             // 진행 중인 목표
-            Text(
+            const Text(
               '진행 중인 목표',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             SizedBox(height: 12.h),
 
-            // 목표 리스트 (임시)
-            _buildGoalList(),
+            // 목표 리스트
+            _buildGoalList(context),
           ],
         ),
       ),
@@ -128,11 +166,8 @@ class HomeTab extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryColor.withOpacity(0.8),
-          ],
+        gradient: const LinearGradient(
+          colors: [Colors.indigo, Colors.indigoAccent],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -141,39 +176,35 @@ class HomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              Icon(
-                Icons.local_fire_department,
-                color: Colors.white,
-                size: 24.w,
-              ),
-              SizedBox(width: 8.w),
+              Icon(Icons.local_fire_department, color: Colors.white, size: 24),
+              SizedBox(width: 8),
               Text(
                 '연속 달성',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16.sp,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 8.h),
+          const SizedBox(height: 8),
           Text(
-            '7일',
-            style: TextStyle(
+            '$streak일',
+            style: const TextStyle(
               color: Colors.white,
-              fontSize: 32.sp,
+              fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 4.h),
+          const SizedBox(height: 4),
           Text(
             '화이팅! 계속해서 목표를 달성해보세요 🔥',
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
-              fontSize: 14.sp,
+              fontSize: 14,
             ),
           ),
         ],
@@ -181,39 +212,30 @@ class HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildAddGoalButton() {
+  Widget _buildAddGoalButton(BuildContext context) {
     return Container(
       width: double.infinity,
       height: 56.h,
       decoration: BoxDecoration(
-        border: Border.all(
-          color: AppTheme.primaryColor.withOpacity(0.3),
-          width: 2,
-        ),
+        border: Border.all(color: Colors.indigo.withOpacity(0.3), width: 2),
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            // TODO: 목표 추가 페이지로 이동
-          },
+          onTap: () => _showAddGoalDialog(context),
           borderRadius: BorderRadius.circular(12.r),
-          child: Center(
+          child: const Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.add_circle_outline,
-                  color: AppTheme.primaryColor,
-                  size: 20.w,
-                ),
-                SizedBox(width: 8.w),
+                Icon(Icons.add_circle_outline, color: Colors.indigo, size: 20),
+                SizedBox(width: 8),
                 Text(
                   '새 목표 추가하기',
                   style: TextStyle(
-                    color: AppTheme.primaryColor,
-                    fontSize: 16.sp,
+                    color: Colors.indigo,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -225,18 +247,28 @@ class HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildGoalList() {
+  Widget _buildGoalList(BuildContext context) {
+    if (goals.isEmpty) {
+      return const Center(
+        child: Text(
+          '아직 목표가 없습니다.\n새 목표를 추가해보세요!',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
     return Column(
-      children: [
-        // 임시 목표 카드들
-        _buildGoalCard('사이드 프로젝트 MVP 완성', '진행률: 60%', 0.6),
-        SizedBox(height: 12.h),
-        _buildGoalCard('운동 루틴 만들기', '진행률: 30%', 0.3),
-      ],
+      children: goals.map((goal) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: 12.h),
+          child: _buildGoalCard(context, goal),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildGoalCard(String title, String subtitle, double progress) {
+  Widget _buildGoalCard(BuildContext context, Goal goal) {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.w),
@@ -251,41 +283,100 @@ class HomeTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16.sp,
+                        goal.title,
+                        style: const TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(height: 4.h),
+                      const SizedBox(height: 4),
                       Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: AppTheme.textSecondary,
+                        goal.description,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
                         ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.play_circle_outline),
-                  onPressed: () {
-                    // TODO: 목표 시작
-                  },
+                  icon: Icon(
+                    goal.isCompleted
+                        ? Icons.check_circle
+                        : Icons.play_circle_outline,
+                    color: goal.isCompleted ? Colors.green : Colors.indigo,
+                  ),
+                  onPressed: goal.isCompleted
+                      ? null
+                      : () {
+                          onGoalCompleted(goal.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('목표를 완료했습니다! 🎉')),
+                          );
+                        },
                 ),
               ],
             ),
-            SizedBox(height: 12.h),
+            const SizedBox(height: 12),
             LinearProgressIndicator(
-              value: progress,
-              backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppTheme.primaryColor,
-              ),
+              value: goal.progress,
+              backgroundColor: Colors.indigo.withOpacity(0.2),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.indigo),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAddGoalDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('새 목표 추가'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: '목표 제목',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: '목표 설명',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (titleController.text.isNotEmpty) {
+                onGoalAdded(titleController.text, descriptionController.text);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('목표가 추가되었습니다!')));
+              }
+            },
+            child: const Text('추가'),
+          ),
+        ],
       ),
     );
   }
@@ -296,7 +387,14 @@ class GoalTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('목표 탭')));
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          '목표 탭',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
   }
 }
 
@@ -305,7 +403,14 @@ class FeedTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('피드 탭')));
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          '피드 탭',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
   }
 }
 
@@ -314,6 +419,13 @@ class ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('프로필 탭')));
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          '프로필 탭',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
   }
 }
