@@ -92,6 +92,46 @@ class LocalStorageService {
     return prefs.getStringList('friends') ?? [];
   }
 
+  // 소셜 액션 저장
+  static Future<void> saveSocialActions(
+    List<Map<String, dynamic>> actions,
+  ) async {
+    await prefs.setString('social_actions', jsonEncode(actions));
+  }
+
+  // 소셜 액션 불러오기
+  static List<Map<String, dynamic>> getSocialActions() {
+    final actionsString = prefs.getString('social_actions');
+    if (actionsString == null) return [];
+
+    try {
+      final List<dynamic> actionsList = jsonDecode(actionsString);
+      return actionsList.cast<Map<String, dynamic>>();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 회고 저장
+  static Future<void> saveReflections(
+    List<Map<String, dynamic>> reflections,
+  ) async {
+    await prefs.setString('reflections', jsonEncode(reflections));
+  }
+
+  // 회고 불러오기
+  static List<Map<String, dynamic>> getReflections() {
+    final reflectionsString = prefs.getString('reflections');
+    if (reflectionsString == null) return [];
+
+    try {
+      final List<dynamic> reflectionsList = jsonDecode(reflectionsString);
+      return reflectionsList.cast<Map<String, dynamic>>();
+    } catch (e) {
+      return [];
+    }
+  }
+
   // 모든 데이터 초기화
   static Future<void> clearAll() async {
     await prefs.clear();
