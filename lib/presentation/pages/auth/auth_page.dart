@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get_it/get_it.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/app_constants.dart';
@@ -42,12 +41,12 @@ class _AuthPageState extends State<AuthPage> {
               Text(
                 '하루에 하나라도, 제대로.\n그리고 친구와 함께 보면 더 즐겁다.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppTheme.textSecondary),
               ),
               SizedBox(height: 48.h),
-              
+
               // 구글 로그인 버튼
               BlocConsumer<AuthBloc, AuthState>(
                 listener: (context, state) {
@@ -65,16 +64,20 @@ class _AuthPageState extends State<AuthPage> {
                     width: double.infinity,
                     height: 48.h,
                     child: ElevatedButton.icon(
-                      onPressed: state is AuthLoading ? null : () {
-                        context.read<AuthBloc>().add(SignInWithGoogle());
-                      },
+                      onPressed: state is AuthLoading
+                          ? null
+                          : () {
+                              context.read<AuthBloc>().add(SignInWithGoogle());
+                            },
                       icon: state is AuthLoading
                           ? SizedBox(
                               width: 20.w,
                               height: 20.h,
                               child: const CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : Icon(Icons.login, size: 20.w),
@@ -92,20 +95,20 @@ class _AuthPageState extends State<AuthPage> {
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
-                    );
+                    ),
                   );
                 },
               ),
-              
+
               SizedBox(height: 24.h),
-              
+
               // 개인정보처리방침 및 이용약관
               Text(
                 '로그인 시 개인정보처리방침 및 이용약관에 동의하는 것으로 간주됩니다.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textTertiary,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.textTertiary),
               ),
             ],
           ),

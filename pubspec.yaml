@@ -82,6 +82,8 @@ dependencies:
   # 코드 생성
   json_annotation: ^4.8.1
   json_serializable: ^6.7.1
+  equatable: ^2.0.5
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:
