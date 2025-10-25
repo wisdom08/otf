@@ -17,6 +17,16 @@ class LocalStorageService {
     return _prefs!;
   }
 
+  // 현재 사용자 ID 저장
+  static Future<void> setCurrentUserId(String userId) async {
+    await prefs.setString('current_user_id', userId);
+  }
+
+  // 현재 사용자 ID 불러오기
+  static String getCurrentUserId() {
+    return prefs.getString('current_user_id') ?? 'current_user';
+  }
+
   // 목표 저장
   static Future<void> saveGoals(List<Map<String, dynamic>> goals) async {
     await prefs.setString('goals', jsonEncode(goals));

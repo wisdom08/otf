@@ -453,6 +453,8 @@ class GoalService {
     if (goalIndex != -1) {
       final goal = _goals[goalIndex];
 
+      print('목표 완료 처리: ${goal.title} (${goal.type})');
+
       // 목표 완료 처리
       _goals[goalIndex] = _goals[goalIndex].copyWith(
         isCompleted: true,
@@ -465,6 +467,8 @@ class GoalService {
 
       await saveGoals();
       await LocalStorageService.completeGoal(goalId);
+
+      print('목표 완료 처리 완료: ${goal.title}');
     }
   }
 
@@ -587,6 +591,10 @@ class GoalService {
     // 상위 목표의 진행률 계산 (완료된 하위 목표 수 / 전체 하위 목표 수)
     final newProgress = completedSubGoals / subGoals.length;
 
+    print(
+      '진행률 업데이트: ${parentGoal.title} - 완료된 하위목표: $completedSubGoals/$subGoals.length = $newProgress',
+    );
+
     // 상위 목표 진행률 업데이트
     // 월간 목표와 주간 목표는 자동으로 완료되지 않음 (수동 완료 처리)
     final shouldAutoComplete = parentGoal.type == GoalType.daily;
@@ -596,6 +604,10 @@ class GoalService {
       isCompleted: shouldAutoComplete
           ? newProgress >= 1.0
           : parentGoal.isCompleted,
+    );
+
+    print(
+      '진행률 업데이트 완료: ${_goals[parentGoalIndex].title} - ${_goals[parentGoalIndex].progress}',
     );
 
     // 상위 목표의 상위 목표도 업데이트 (재귀적)
@@ -764,10 +776,11 @@ class GoalService {
   static List<Goal> getFeedGoals() {
     final allGoals = getGoals();
     final friends = getFriends();
+    final currentUserId = LocalStorageService.getCurrentUserId();
 
     return allGoals.where((goal) {
       // 내 목표는 제외
-      if (goal.userId == 'current_user') return false;
+      if (goal.userId == currentUserId) return false;
 
       // 전체공개 목표
       if (goal.privacy == GoalPrivacy.public) return true;
@@ -812,6 +825,151 @@ class GoalService {
   // 회고 관리
   static List<Reflection> _reflections = [];
 
+  // 회고 저장
+  static Future<void> addReflection(
+    String goalId,
+    String content,
+    int rating, {
+    List<String> tags = const [],
+    String userId = 'current_user',
+    ReflectionType type = ReflectionType.oneLine,
+    Map<String, dynamic>? typeData,
+  }) async {
+    final reflection = Reflection(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      goalId: goalId,
+      userId: userId,
+      content: content,
+      createdAt: DateTime.now(),
+      rating: rating,
+      tags: tags,
+      type: type,
+      typeData: typeData,
+    );
+
+    print('회고 추가 중: ${reflection.id} - ${reflection.content}');
+    _reflections.add(reflection);
+    await _saveReflections();
+    print('회고 저장 완료. 총 회고 수: ${_reflections.length}');
+  }
+
+  // 회고 저장
+  static Future<void> _saveReflections() async {
+    await LocalStorageService.saveReflections(
+      _reflections.map((r) => r.toMap()).toList(),
+    );
+  }
+
+  // 특정 목표의 회고 가져오기
+  static List<Reflection> getReflections(String goalId) {
+    return _reflections
+        .where((reflection) => reflection.goalId == goalId)
+        .toList();
+  }
+
+  // 모든 회고 가져오기
+  static List<Reflection> getAllReflections() {
+    return _reflections;
+  }
+
+  // 목표 완료 가능 여부 확인
+  static bool canCompleteGoal(String goalId) {
+    final goal = _goals.firstWhere((g) => g.id == goalId);
+
+    switch (goal.type) {
+      case GoalType.daily:
+        return true; // 일간 목표는 항상 완료 가능
+      case GoalType.weekly:
+        return canCompleteWeeklyGoal(goalId);
+      case GoalType.monthly:
+        return canCompleteMonthlyGoal(goalId);
+    }
+  }
+
+  // 주간 목표 완료 가능 여부 확인
+  static bool canCompleteWeeklyGoal(String goalId) {
+    final subGoals = _goals
+        .where((goal) => goal.parentGoalId == goalId)
+        .toList();
+    return subGoals.every((goal) => goal.isCompleted);
+  }
+
+  // 월간 목표 완료 가능 여부 확인
+  static bool canCompleteMonthlyGoal(String goalId) {
+    final subGoals = _goals
+        .where((goal) => goal.parentGoalId == goalId)
+        .toList();
+    return subGoals.every((goal) => goal.isCompleted);
+  }
+
+  // 소셜 액션 관련 메서드들
+  static int getLikeCount(String goalId) {
+    return _socialActions
+        .where(
+          (action) =>
+              action.goalId == goalId && action.type == SocialActionType.like,
+        )
+        .length;
+  }
+
+  static int getCommentCount(String goalId) {
+    return _socialActions
+        .where(
+          (action) =>
+              action.goalId == goalId &&
+              action.type == SocialActionType.comment,
+        )
+        .length;
+  }
+
+  static int getShareCount(String goalId) {
+    return _socialActions
+        .where(
+          (action) =>
+              action.goalId == goalId && action.type == SocialActionType.share,
+        )
+        .length;
+  }
+
+  static bool hasUserLiked(String goalId) {
+    final currentUserId = LocalStorageService.getCurrentUserId();
+    return _socialActions.any(
+      (action) =>
+          action.goalId == goalId &&
+          action.userId == currentUserId &&
+          action.type == SocialActionType.like,
+    );
+  }
+
+  static Future<void> toggleLike(String goalId) async {
+    final currentUserId = LocalStorageService.getCurrentUserId();
+    final existingLike = _socialActions.firstWhere(
+      (action) =>
+          action.goalId == goalId &&
+          action.userId == currentUserId &&
+          action.type == SocialActionType.like,
+      orElse: () => SocialAction(
+        id: '',
+        goalId: '',
+        userId: '',
+        type: SocialActionType.like,
+        createdAt: DateTime.now(),
+      ),
+    );
+
+    if (existingLike.id.isNotEmpty) {
+      // 이미 좋아요를 눌렀으면 제거
+      _socialActions.removeWhere((action) => action.id == existingLike.id);
+    } else {
+      // 좋아요 추가
+      await addSocialAction(goalId, SocialActionType.like);
+    }
+  }
+
+  static Future<void> shareGoal(String goalId) async {
+    await addSocialAction(goalId, SocialActionType.share);
+  }
+
   // 소셜 액션 추가
   static Future<void> addSocialAction(
     String goalId,
@@ -837,56 +995,58 @@ class GoalService {
     return _socialActions.where((action) => action.goalId == goalId).toList();
   }
 
-  // 좋아요 수 가져오기
-  static int getLikeCount(String goalId) {
+  // 소셜 액션 저장
+  static Future<void> _saveSocialActions() async {
+    await LocalStorageService.saveSocialActions(
+      _socialActions.map((a) => a.toMap()).toList(),
+    );
+  }
+
+  // 회고 소셜 액션 관련 메서드들
+  static int getReflectionLikeCount(String reflectionId) {
     return _socialActions
         .where(
           (action) =>
-              action.goalId == goalId && action.type == SocialActionType.like,
+              action.goalId == reflectionId && action.type == SocialActionType.like,
         )
         .length;
   }
 
-  // 댓글 수 가져오기
-  static int getCommentCount(String goalId) {
+  static int getReflectionCommentCount(String reflectionId) {
     return _socialActions
         .where(
           (action) =>
-              action.goalId == goalId &&
+              action.goalId == reflectionId &&
               action.type == SocialActionType.comment,
         )
         .length;
   }
 
-  // 공유 수 가져오기
-  static int getShareCount(String goalId) {
+  static int getReflectionShareCount(String reflectionId) {
     return _socialActions
         .where(
           (action) =>
-              action.goalId == goalId && action.type == SocialActionType.share,
+              action.goalId == reflectionId && action.type == SocialActionType.share,
         )
         .length;
   }
 
-  // 사용자가 좋아요를 눌렀는지 확인
-  static bool hasUserLiked(String goalId, {String userId = 'current_user'}) {
+  static bool hasUserLikedReflection(String reflectionId) {
+    final currentUserId = LocalStorageService.getCurrentUserId();
     return _socialActions.any(
       (action) =>
-          action.goalId == goalId &&
-          action.userId == userId &&
+          action.goalId == reflectionId &&
+          action.userId == currentUserId &&
           action.type == SocialActionType.like,
     );
   }
 
-  // 좋아요 토글
-  static Future<void> toggleLike(
-    String goalId, {
-    String userId = 'current_user',
-  }) async {
+  static Future<void> toggleReflectionLike(String reflectionId) async {
+    final currentUserId = LocalStorageService.getCurrentUserId();
     final existingLike = _socialActions.firstWhere(
       (action) =>
-          action.goalId == goalId &&
-          action.userId == userId &&
+          action.goalId == reflectionId &&
+          action.userId == currentUserId &&
           action.type == SocialActionType.like,
       orElse: () => SocialAction(
         id: '',
@@ -898,25 +1058,18 @@ class GoalService {
     );
 
     if (existingLike.id.isNotEmpty) {
-      _socialActions.remove(existingLike);
+      // 이미 좋아요를 눌렀으면 제거
+      _socialActions.removeWhere((action) => action.id == existingLike.id);
     } else {
-      await addSocialAction(goalId, SocialActionType.like, userId: userId);
+      // 좋아요 추가
+      await addSocialAction(reflectionId, SocialActionType.like);
     }
     await _saveSocialActions();
   }
 
-  // 소셜 액션 저장
-  static Future<void> _saveSocialActions() async {
-    final actionsJson = _socialActions.map((action) => action.toMap()).toList();
-    await LocalStorageService.saveSocialActions(actionsJson);
-  }
-
-  // 소셜 액션 불러오기
-  static Future<void> _loadSocialActions() async {
-    final actionsJson = LocalStorageService.getSocialActions();
-    _socialActions = actionsJson
-        .map((json) => SocialAction.fromMap(json))
-        .toList();
+  static Future<void> shareReflection(String reflectionId) async {
+    await addSocialAction(reflectionId, SocialActionType.share);
+    await _saveSocialActions();
   }
 
   // 테스트 데이터 초기화
@@ -924,363 +1077,223 @@ class GoalService {
     // 기존 데이터가 있으면 초기화하지 않음
     if (_goals.isNotEmpty) return;
 
-    // 테스트용 목표 데이터
+    // 테스트용 목표 데이터 - 다양한 사용자와 현실적인 목표들
     final testGoals = [
+      // Alice의 목표들 (공개)
       Goal(
-        id: 'goal_1',
-        title: '2024년 새해 목표 달성하기',
-        description: '건강한 생활습관을 만들고 새로운 기술을 배우는 것이 목표입니다.',
+        id: 'goal_alice_1',
+        title: '2024년 건강한 생활습관 만들기',
+        description: '규칙적인 운동과 건강한 식단으로 몸과 마음을 관리하기',
         type: GoalType.monthly,
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        targetMinutes: 1200, // 20시간
+        createdAt: DateTime.now().subtract(const Duration(days: 10)),
+        targetMinutes: 1800, // 30시간
         targetYear: 2024,
         targetMonth: 1,
         privacy: GoalPrivacy.public,
-        userId: 'user_alice',
+        userId: 'alice_kim',
       ),
       Goal(
-        id: 'goal_2',
-        title: '주간 운동 계획',
-        description: '매주 3회 이상 운동하기',
+        id: 'goal_alice_2',
+        title: '주간 운동 루틴',
+        description: '매주 3회 이상 헬스장에서 운동하기',
         type: GoalType.weekly,
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        targetMinutes: 180, // 3시간
-        parentGoalId: 'goal_1',
-        targetYear: 2024,
-        targetMonth: 1,
-        targetWeek: 1,
-        privacy: GoalPrivacy.public,
-        userId: 'user_alice',
-      ),
-      Goal(
-        id: 'goal_3',
-        title: '오늘의 독서 시간',
-        description: '매일 30분씩 책 읽기',
-        type: GoalType.daily,
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        targetMinutes: 30,
-        parentGoalId: 'goal_2',
-        targetYear: 2024,
-        targetMonth: 1,
-        targetWeek: 1,
-        privacy: GoalPrivacy.public,
-        userId: 'user_alice',
-      ),
-      Goal(
-        id: 'goal_4',
-        title: 'Flutter 앱 개발 마스터하기',
-        description: 'Flutter를 이용한 모바일 앱 개발 실력을 향상시키기',
-        type: GoalType.monthly,
         createdAt: DateTime.now().subtract(const Duration(days: 7)),
+        targetMinutes: 180, // 3시간
+        parentGoalId: 'goal_alice_1',
+        targetYear: 2024,
+        targetMonth: 1,
+        targetWeek: 1,
+        privacy: GoalPrivacy.public,
+        userId: 'alice_kim',
+      ),
+      Goal(
+        id: 'goal_alice_3',
+        title: '매일 30분 독서하기',
+        description: '하루 30분씩 자기계발서 읽기',
+        type: GoalType.daily,
+        createdAt: DateTime.now().subtract(const Duration(days: 5)),
+        targetMinutes: 30,
+        parentGoalId: 'goal_alice_2',
+        targetYear: 2024,
+        targetMonth: 1,
+        targetWeek: 1,
+        privacy: GoalPrivacy.public,
+        userId: 'alice_kim',
+      ),
+
+      // Bob의 목표들 (친구 공개)
+      Goal(
+        id: 'goal_bob_1',
+        title: 'Flutter 개발자 되기',
+        description: 'Flutter를 이용한 모바일 앱 개발 실력 향상',
+        type: GoalType.monthly,
+        createdAt: DateTime.now().subtract(const Duration(days: 15)),
         targetMinutes: 2400, // 40시간
         targetYear: 2024,
         targetMonth: 1,
         privacy: GoalPrivacy.friends,
-        userId: 'user_bob',
+        userId: 'bob_dev',
       ),
       Goal(
-        id: 'goal_5',
+        id: 'goal_bob_2',
         title: '주간 코딩 프로젝트',
         description: '매주 작은 프로젝트 하나씩 완성하기',
         type: GoalType.weekly,
-        createdAt: DateTime.now().subtract(const Duration(days: 4)),
+        createdAt: DateTime.now().subtract(const Duration(days: 8)),
         targetMinutes: 300, // 5시간
-        parentGoalId: 'goal_4',
+        parentGoalId: 'goal_bob_1',
         targetYear: 2024,
         targetMonth: 1,
         targetWeek: 2,
         privacy: GoalPrivacy.friends,
-        userId: 'user_bob',
+        userId: 'bob_dev',
       ),
       Goal(
-        id: 'goal_6',
+        id: 'goal_bob_3',
         title: '매일 알고리즘 문제 풀기',
         description: '하루에 최소 1문제씩 알고리즘 문제 해결',
         type: GoalType.daily,
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        createdAt: DateTime.now().subtract(const Duration(days: 3)),
         targetMinutes: 60,
-        parentGoalId: 'goal_5',
+        parentGoalId: 'goal_bob_2',
         targetYear: 2024,
         targetMonth: 1,
         targetWeek: 2,
         privacy: GoalPrivacy.friends,
-        userId: 'user_bob',
+        userId: 'bob_dev',
       ),
+
+      // David의 목표들 (공개)
       Goal(
-        id: 'goal_7',
-        title: '건강한 다이어트 계획',
-        description: '체중 감량과 건강한 식단 관리',
+        id: 'goal_david_1',
+        title: '영어 회화 실력 향상',
+        description: '매일 영어 공부로 회화 실력 늘리기',
         type: GoalType.monthly,
-        createdAt: DateTime.now().subtract(const Duration(days: 6)),
-        targetMinutes: 1800, // 30시간
+        createdAt: DateTime.now().subtract(const Duration(days: 8)),
+        targetMinutes: 1200, // 20시간
         targetYear: 2024,
         targetMonth: 1,
-        privacy: GoalPrivacy.private,
-        userId: 'user_charlie',
+        privacy: GoalPrivacy.public,
+        userId: 'david_eng',
       ),
       Goal(
-        id: 'goal_8',
-        title: '주간 운동 루틴',
-        description: '매주 4회 헬스장 가기',
+        id: 'goal_david_2',
+        title: '주간 영어 스터디',
+        description: '매주 영어 스터디 그룹 참여하기',
         type: GoalType.weekly,
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        targetMinutes: 240, // 4시간
-        parentGoalId: 'goal_7',
+        createdAt: DateTime.now().subtract(const Duration(days: 4)),
+        targetMinutes: 120, // 2시간
+        parentGoalId: 'goal_david_1',
         targetYear: 2024,
         targetMonth: 1,
-        targetWeek: 3,
-        privacy: GoalPrivacy.private,
-        userId: 'user_charlie',
+        targetWeek: 4,
+        privacy: GoalPrivacy.public,
+        userId: 'david_eng',
+      ),
+      Goal(
+        id: 'goal_david_3',
+        title: '매일 영어 단어 암기',
+        description: '하루에 10개씩 새로운 영어 단어 암기',
+        type: GoalType.daily,
+        createdAt: DateTime.now().subtract(const Duration(days: 2)),
+        targetMinutes: 20,
+        parentGoalId: 'goal_david_2',
+        targetYear: 2024,
+        targetMonth: 1,
+        targetWeek: 4,
+        privacy: GoalPrivacy.public,
+        userId: 'david_eng',
+      ),
+
+      // Emma의 목표들 (친구 공개)
+      Goal(
+        id: 'goal_emma_1',
+        title: '피아노 연주 실력 향상',
+        description: '클래식 피아노 곡들을 완벽하게 연주할 수 있도록 연습',
+        type: GoalType.monthly,
+        createdAt: DateTime.now().subtract(const Duration(days: 14)),
+        targetMinutes: 2000, // 33시간
+        targetYear: 2024,
+        targetMonth: 1,
+        privacy: GoalPrivacy.friends,
+        userId: 'emma_music',
+      ),
+      Goal(
+        id: 'goal_emma_2',
+        title: '주간 피아노 레슨',
+        description: '매주 피아노 레슨 받고 연습하기',
+        type: GoalType.weekly,
+        createdAt: DateTime.now().subtract(const Duration(days: 9)),
+        targetMinutes: 240, // 4시간
+        parentGoalId: 'goal_emma_1',
+        targetYear: 2024,
+        targetMonth: 1,
+        targetWeek: 2,
+        privacy: GoalPrivacy.friends,
+        userId: 'emma_music',
       ),
     ];
 
-    // 목표 저장 (일부 목표를 완료 상태로 설정)
+    // 목표 저장
     _goals = testGoals;
 
-    // 회고가 있는 목표들을 완료 상태로 설정 (월간 목표는 제외)
-    final completedGoalIds = ['goal_2', 'goal_4']; // goal_1(월간) 제외
+    // 일부 목표를 완료 상태로 설정 (다양한 완료 상태)
+    final completedGoalIds = ['goal_alice_2', 'goal_bob_3', 'goal_david_3'];
     for (int i = 0; i < _goals.length; i++) {
       if (completedGoalIds.contains(_goals[i].id)) {
-        _goals[i] = _goals[i].copyWith(isCompleted: true, progress: 1.0);
-        // completedAt은 별도로 설정 (Goal 생성자에 completedAt 파라미터가 없으므로)
         final completedAt = DateTime.now().subtract(Duration(hours: i + 1));
-        _goals[i] = Goal(
-          id: _goals[i].id,
-          title: _goals[i].title,
-          description: _goals[i].description,
-          type: _goals[i].type,
-          createdAt: _goals[i].createdAt,
+        _goals[i] = _goals[i].copyWith(
           isCompleted: true,
           progress: 1.0,
-          targetMinutes: _goals[i].targetMinutes,
-          parentGoalId: _goals[i].parentGoalId,
-          targetYear: _goals[i].targetYear,
-          targetMonth: _goals[i].targetMonth,
-          targetWeek: _goals[i].targetWeek,
-          userId: _goals[i].userId,
-          privacy: _goals[i].privacy,
+          completedAt: completedAt,
         );
-        // completedAt은 copyWith로 설정
-        _goals[i] = _goals[i].copyWith(completedAt: completedAt);
       }
     }
 
-    await saveGoals();
+    // 친구 관계 설정
+    await addFriend('alice_kim');
+    await addFriend('bob_dev');
+    await addFriend('david_eng');
+    await addFriend('emma_music');
 
-    // 테스트용 친구 데이터
-    await addFriend('user_alice');
-    await addFriend('user_bob');
-    await addFriend('user_charlie');
-
-    // 테스트용 소셜 액션 데이터
-    final testSocialActions = [
-      SocialAction(
-        id: 'action_1',
-        goalId: 'goal_1',
-        userId: 'user_bob',
-        type: SocialActionType.like,
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      ),
-      SocialAction(
-        id: 'action_2',
-        goalId: 'goal_1',
-        userId: 'user_charlie',
-        type: SocialActionType.like,
-        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-      ),
-      SocialAction(
-        id: 'action_3',
-        goalId: 'goal_1',
-        userId: 'user_bob',
-        type: SocialActionType.comment,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-        content: '정말 멋진 목표네요! 화이팅! 💪',
-      ),
-      SocialAction(
-        id: 'action_4',
-        goalId: 'goal_4',
-        userId: 'user_alice',
-        type: SocialActionType.like,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 45)),
-      ),
-      SocialAction(
-        id: 'action_5',
-        goalId: 'goal_4',
-        userId: 'user_charlie',
-        type: SocialActionType.comment,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 20)),
-        content: 'Flutter 개발 화이팅! 저도 배우고 있어요 🚀',
-      ),
-      SocialAction(
-        id: 'action_6',
-        goalId: 'goal_4',
-        userId: 'user_alice',
-        type: SocialActionType.share,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
-      ),
-      SocialAction(
-        id: 'action_7',
-        goalId: 'goal_2',
-        userId: 'user_bob',
-        type: SocialActionType.like,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
-      ),
-      SocialAction(
-        id: 'action_8',
-        goalId: 'goal_5',
-        userId: 'user_alice',
-        type: SocialActionType.comment,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-        content: '프로젝트 완성하시면 공유해주세요!',
-      ),
-    ];
-
-    _socialActions = testSocialActions;
-    await _saveSocialActions();
-
-    // 테스트용 회고 데이터
-    final testReflections = [
-      Reflection(
-        id: 'reflection_1',
-        goalId: 'goal_1',
-        userId: 'user_alice',
-        content:
-            '새해 목표를 달성하며 정말 뿌듯합니다! 건강한 생활습관을 만들기 위해 매일 운동을 했고, 새로운 기술도 배웠어요. 다음 달에는 더 도전적인 목표를 세워보려고 합니다.',
-        createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-        rating: 5,
-        tags: ['성취감', '다음계획', '보람'],
-        type: ReflectionType.oneLine,
-      ),
-      Reflection(
-        id: 'reflection_2',
-        goalId: 'goal_4',
-        userId: 'user_bob',
-        content: 'KPT 회고',
-        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-        rating: 4,
-        tags: ['성장', '도전', '기쁨'],
-        type: ReflectionType.kpt,
-        typeData: {
-          'keep': '매일 2시간씩 Flutter 공부를 꾸준히 했다',
-          'problem': '복잡한 상태 관리에서 어려움을 겪었다',
-          'try': 'Provider 패턴을 더 깊이 공부해보자',
-        },
-      ),
-      Reflection(
-        id: 'reflection_3',
-        goalId: 'goal_2',
-        userId: 'user_alice',
-        content: '이모지 회고: 🙂',
-        createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-        rating: 4,
-        tags: ['성취감', '성장', '다음계획'],
-        type: ReflectionType.emoji,
-        typeData: {'emoji': '🙂', 'rating': 4},
-      ),
-    ];
-
-    _reflections = testReflections;
-    await _saveReflections();
-
-    // Streak 데이터 초기화
-    await LocalStorageService.saveStreak(7);
-  }
-
-  // 회고 추가
-  static Future<void> addReflection(
-    String goalId,
-    String content,
-    int rating, {
-    List<String> tags = const [],
-    String userId = 'current_user',
-    ReflectionType type = ReflectionType.oneLine,
-    Map<String, dynamic>? typeData,
-  }) async {
-    final reflection = Reflection(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      goalId: goalId,
-      userId: userId,
-      content: content,
-      createdAt: DateTime.now(),
-      rating: rating,
-      tags: tags,
-      type: type,
-      typeData: typeData,
+    // 테스트용 회고 데이터 추가
+    await addReflection(
+      'goal_alice_2',
+      '운동을 통해 몸이 많이 좋아졌어요! 앞으로도 꾸준히 해야겠습니다.',
+      5,
+      tags: ['성취감', '보람'],
+      userId: 'alice_kim',
+      type: ReflectionType.oneLine,
     );
 
-    _reflections.add(reflection);
-    await _saveReflections();
-  }
+    await addReflection(
+      'goal_bob_3',
+      'KPT 회고',
+      5,
+      tags: ['성장', '도전'],
+      userId: 'bob_dev',
+      type: ReflectionType.kpt,
+      typeData: {
+        'keep': '매일 꾸준히 문제를 풀어온 것',
+        'problem': '어려운 문제에서 포기하고 싶었던 순간들',
+        'try': '더 체계적인 알고리즘 공부 방법 찾기',
+      },
+    );
 
-  // 목표의 회고 가져오기
-  static List<Reflection> getReflections(String goalId) {
-    return _reflections
-        .where((reflection) => reflection.goalId == goalId)
-        .toList();
-  }
+    await addReflection(
+      'goal_david_3',
+      '이모지 회고: 😄',
+      5,
+      tags: ['기쁨', '성취감'],
+      userId: 'david_eng',
+      type: ReflectionType.emoji,
+      typeData: {'emoji': '😄', 'rating': 5},
+    );
 
-  // 모든 회고 가져오기
-  static List<Reflection> getAllReflections() {
-    return _reflections;
-  }
-
-  // 회고 저장
-  static Future<void> _saveReflections() async {
-    final reflectionsJson = _reflections
-        .map((reflection) => reflection.toMap())
-        .toList();
-    await LocalStorageService.saveReflections(reflectionsJson);
-  }
-
-  // 회고 불러오기
-  static Future<void> _loadReflections() async {
-    final reflectionsJson = LocalStorageService.getReflections();
-    _reflections = reflectionsJson
-        .map((json) => Reflection.fromMap(json))
-        .toList();
-  }
-
-  // 주간 목표 완료 가능 여부 확인 (모든 일간 목표가 완료되어야 함)
-  static bool canCompleteWeeklyGoal(String weeklyGoalId) {
-    final dailyGoals = getSubGoals(
-      weeklyGoalId,
-    ).where((goal) => goal.type == GoalType.daily).toList();
-
-    if (dailyGoals.isEmpty) return true; // 일간 목표가 없으면 완료 가능
-
-    return dailyGoals.every((goal) => goal.isCompleted);
-  }
-
-  // 월간 목표 완료 가능 여부 확인 (모든 주간 목표와 그 하위 일간 목표가 완료되어야 함)
-  static bool canCompleteMonthlyGoal(String monthlyGoalId) {
-    final weeklyGoals = getSubGoals(
-      monthlyGoalId,
-    ).where((goal) => goal.type == GoalType.weekly).toList();
-
-    if (weeklyGoals.isEmpty) return false; // 주간 목표가 없으면 완료할 수 없음
-
-    // 모든 주간 목표가 완료되었는지 확인
-    for (final weeklyGoal in weeklyGoals) {
-      if (!weeklyGoal.isCompleted) return false;
-
-      // 각 주간 목표의 하위 일간 목표들이 모두 완료되었는지 확인
-      if (!canCompleteWeeklyGoal(weeklyGoal.id)) return false;
-    }
-
-    return true;
-  }
-
-  // 목표 완료 가능 여부 확인 (계층적 조건 포함)
-  static bool canCompleteGoal(String goalId) {
-    final goal = _goals.firstWhere((g) => g.id == goalId);
-
-    switch (goal.type) {
-      case GoalType.daily:
-        return true; // 일간 목표는 언제든 완료 가능
-      case GoalType.weekly:
-        return canCompleteWeeklyGoal(goalId);
-      case GoalType.monthly:
-        return canCompleteMonthlyGoal(goalId);
-    }
+    await saveGoals();
+    await LocalStorageService.saveGoals(_goals.map((g) => g.toMap()).toList());
+    await LocalStorageService.saveReflections(
+      _reflections.map((r) => r.toMap()).toList(),
+    );
   }
 }
