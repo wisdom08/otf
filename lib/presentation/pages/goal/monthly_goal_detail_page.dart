@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../services/goal_service.dart';
 import '../../widgets/hierarchical_goal_card.dart';
+import '../../widgets/reflection_dialog.dart';
 
 class MonthlyGoalDetailPage extends StatefulWidget {
   final Goal monthlyGoal;
@@ -128,6 +129,7 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
                     subGoals: GoalService.getSubGoals(goal.id),
                     onGoalCompleted: _completeGoal,
                     onTimeTrackingToggled: _toggleTimeTracking,
+                    onDataChanged: _loadSubGoals,
                   ),
                 ),
               ),
@@ -228,14 +230,12 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
                         : Icons.check_circle_outline,
                     color: _currentMonthlyGoal.isCompleted
                         ? Colors.green[600]
-                        : Colors.indigo[600],
+                        : Colors.red[600],
                     size: 24.sp,
                   ),
-                  onPressed: _currentMonthlyGoal.isCompleted
-                      ? null
-                      : () {
-                          _completeGoal(_currentMonthlyGoal.id);
-                        },
+                  onPressed: () {
+                    _completeGoal(_currentMonthlyGoal.id);
+                  },
                 ),
               ),
             ],
@@ -548,8 +548,159 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
   }
 
   Future<void> _completeGoal(String goalId) async {
-    await GoalService.completeGoal(goalId);
+    // 목표의 현재 상태를 확인하여 완료/미완료 처리
+    final goal = GoalService.getGoals().firstWhere(
+      (g) => g.id == goalId,
+      orElse: () => _currentMonthlyGoal,
+    );
+    
+    if (goal.isCompleted) {
+      // 이미 완료된 목표는 미완료 처리 (월간 목표는 회고 없이 바로 처리)
+      await GoalService.uncompleteGoal(goalId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('목표가 미완료 상태로 변경되었습니다'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } else {
+      // 계층적 완료 조건 확인
+      if (GoalService.canCompleteGoal(goalId)) {
+        _showReflectionDialog(goal);
+      } else {
+        _showCannotCompleteDialog(goal);
+      }
+    }
+    
     _loadSubGoals();
+  }
+
+  // 월간 목표 완료 가능 여부 확인
+  bool _canCompleteMonthlyGoal(Goal monthlyGoal) {
+    // 주간 목표들이 모두 완료되었는지 확인
+    final weeklyGoals = GoalService.getSubGoals(monthlyGoal.id)
+        .where((goal) => goal.type == GoalType.weekly)
+        .toList();
+    
+    if (weeklyGoals.isEmpty) {
+      return false; // 주간 목표가 없으면 완료할 수 없음
+    }
+    
+    // 모든 주간 목표가 완료되었는지 확인
+    final allWeeklyCompleted = weeklyGoals.every((goal) => goal.isCompleted);
+    if (!allWeeklyCompleted) {
+      return false; // 주간 목표가 모두 완료되지 않았음
+    }
+    
+    // 각 주간 목표의 하위 일간 목표들이 모두 완료되었는지 확인
+    for (final weeklyGoal in weeklyGoals) {
+      final dailyGoals = GoalService.getSubGoals(weeklyGoal.id)
+          .where((goal) => goal.type == GoalType.daily)
+          .toList();
+      
+      if (dailyGoals.isNotEmpty) {
+        final allDailyCompleted = dailyGoals.every((goal) => goal.isCompleted);
+        if (!allDailyCompleted) {
+          return false; // 일간 목표가 모두 완료되지 않았음
+        }
+      }
+    }
+    
+    return true; // 모든 하위 목표가 완료됨
+  }
+
+
+  // 회고 다이얼로그 표시
+  void _showReflectionDialog(Goal goal) {
+    showDialog(
+      context: context,
+      builder: (context) => ReflectionDialog(
+        goal: goal,
+        onReflectionAdded: () {
+          // ReflectionDialog에서 이미 목표 완료 처리를 했으므로
+          // UI 업데이트만 위해 데이터 새로고침
+          _loadSubGoals();
+        },
+      ),
+    );
+  }
+
+
+  // 완료할 수 없다는 다이얼로그 표시
+  void _showCannotCompleteDialog(Goal goal) {
+    String title = '완료할 수 없습니다';
+    String message = '';
+    List<Widget> contentWidgets = [];
+    
+    switch (goal.type) {
+      case GoalType.weekly:
+        final incompleteDailyGoals = GoalService.getSubGoals(goal.id)
+            .where((g) => g.type == GoalType.daily && !g.isCompleted)
+            .toList();
+        
+        message = '모든 일간 목표를 완료해야 주간 목표를 완료할 수 있습니다.';
+        contentWidgets = [
+          Text(message),
+          const SizedBox(height: 16),
+          const Text('미완료된 일간 목표:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...incompleteDailyGoals.take(5).map((g) => Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 4),
+            child: Text('• ${g.title}'),
+          )),
+          if (incompleteDailyGoals.length > 5)
+            Text(
+              '... 외 ${incompleteDailyGoals.length - 5}개',
+              style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+            ),
+        ];
+        break;
+        
+      case GoalType.monthly:
+        final incompleteWeeklyGoals = GoalService.getSubGoals(goal.id)
+            .where((g) => g.type == GoalType.weekly && !g.isCompleted)
+            .toList();
+        
+        message = '모든 주간 목표와 그 하위 일간 목표를 완료해야 월간 목표를 완료할 수 있습니다.';
+        contentWidgets = [
+          Text(message),
+          const SizedBox(height: 16),
+          const Text('미완료된 주간 목표:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...incompleteWeeklyGoals.take(5).map((g) => Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 4),
+            child: Text('• ${g.title}'),
+          )),
+          if (incompleteWeeklyGoals.length > 5)
+            Text(
+              '... 외 ${incompleteWeeklyGoals.length - 5}개',
+              style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+            ),
+        ];
+        break;
+        
+      case GoalType.daily:
+        // 일간 목표는 항상 완료 가능하므로 이 경우는 발생하지 않음
+        return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: contentWidgets,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _toggleTimeTracking(String goalId) async {

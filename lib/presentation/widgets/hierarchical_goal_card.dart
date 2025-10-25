@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../services/goal_service.dart';
 import '../pages/goal/monthly_goal_detail_page.dart';
+import 'reflection_dialog.dart';
 
 class HierarchicalGoalCard extends StatefulWidget {
   final Goal goal;
   final List<Goal> subGoals;
   final Function(String) onGoalCompleted;
   final Function(String) onTimeTrackingToggled;
+  final VoidCallback? onDataChanged; // 데이터 변경 시 UI 새로고침용
   final int level; // 계층 레벨 (들여쓰기용)
 
   const HierarchicalGoalCard({
@@ -16,6 +18,7 @@ class HierarchicalGoalCard extends StatefulWidget {
     required this.subGoals,
     required this.onGoalCompleted,
     required this.onTimeTrackingToggled,
+    this.onDataChanged,
     this.level = 0,
   });
 
@@ -32,6 +35,15 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
     // 월간 목표는 기본적으로 펼쳐진 상태로 시작
     if (widget.goal.type == GoalType.monthly) {
       _isExpanded = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(HierarchicalGoalCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 목표 상태가 변경되면 UI 업데이트
+    if (oldWidget.goal.isCompleted != widget.goal.isCompleted) {
+      setState(() {});
     }
   }
 
@@ -63,6 +75,7 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
                   subGoals: GoalService.getSubGoals(subGoal.id),
                   onGoalCompleted: widget.onGoalCompleted,
                   onTimeTrackingToggled: widget.onTimeTrackingToggled,
+                  onDataChanged: widget.onDataChanged,
                   level: widget.level + 1,
                 );
               }).toList(),
@@ -139,7 +152,9 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
                       child: Container(
                         padding: EdgeInsets.all(4.w),
                         decoration: BoxDecoration(
-                          color: _getTypeColor(widget.goal.type).withOpacity(0.1),
+                          color: _getTypeColor(
+                            widget.goal.type,
+                          ).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Icon(
@@ -243,9 +258,7 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
                                         : Colors.green[600],
                                     behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        8.r,
-                                      ),
+                                      borderRadius: BorderRadius.circular(8.r),
                                     ),
                                   ),
                                 );
@@ -274,24 +287,22 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
                                   : Icons.check_circle_outline,
                               color: widget.goal.isCompleted
                                   ? Colors.green[600]
-                                  : Colors.indigo[600],
+                                  : Colors.red[600],
                               size: 24.sp,
                             ),
-                            onPressed: widget.goal.isCompleted
-                                ? null
-                                : () {
-                                    widget.onGoalCompleted(widget.goal.id);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text('목표를 완료했습니다! 🎉'),
-                                        backgroundColor: Colors.green[600],
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8.r),
-                                        ),
-                                      ),
-                                    );
-                                  },
+                            onPressed: () {
+                              if (widget.goal.isCompleted) {
+                                // 완료된 목표는 바로 미완료 처리 (회고 팝업 없음)
+                                widget.onGoalCompleted(widget.goal.id);
+                              } else {
+                                // 계층적 완료 조건 확인
+                                if (GoalService.canCompleteGoal(widget.goal.id)) {
+                                  _showReflectionDialog();
+                                } else {
+                                  _showCannotCompleteDialog();
+                                }
+                              }
+                            },
                           ),
                         ),
                       ],
@@ -389,9 +400,9 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
                   alignment: Alignment.centerLeft,
                   widthFactor:
                       widget.goal.type == GoalType.daily &&
-                              widget.goal.targetMinutes > 0
-                          ? widget.goal.timeProgress
-                          : widget.goal.progress,
+                          widget.goal.targetMinutes > 0
+                      ? widget.goal.timeProgress
+                      : widget.goal.progress,
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -483,5 +494,90 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
       case GoalType.daily:
         return Icons.today;
     }
+  }
+
+
+  // 완료할 수 없다는 다이얼로그 표시
+  void _showCannotCompleteDialog() {
+    String title = '완료할 수 없습니다';
+    String message = '';
+    List<Widget> contentWidgets = [];
+    
+    switch (widget.goal.type) {
+      case GoalType.weekly:
+        final incompleteDailyGoals = widget.subGoals
+            .where((goal) => goal.type == GoalType.daily && !goal.isCompleted)
+            .toList();
+        
+        message = '모든 일간 목표를 완료해야 주간 목표를 완료할 수 있습니다.';
+        contentWidgets = [
+          Text(message),
+          const SizedBox(height: 16),
+          const Text('미완료된 일간 목표:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...incompleteDailyGoals.map((goal) => Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 4),
+            child: Text('• ${goal.title}'),
+          )),
+        ];
+        break;
+        
+      case GoalType.monthly:
+        final incompleteWeeklyGoals = widget.subGoals
+            .where((goal) => goal.type == GoalType.weekly && !goal.isCompleted)
+            .toList();
+        
+        message = '모든 주간 목표와 그 하위 일간 목표를 완료해야 월간 목표를 완료할 수 있습니다.';
+        contentWidgets = [
+          Text(message),
+          const SizedBox(height: 16),
+          const Text('미완료된 주간 목표:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...incompleteWeeklyGoals.map((goal) => Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 4),
+            child: Text('• ${goal.title}'),
+          )),
+        ];
+        break;
+        
+      case GoalType.daily:
+        // 일간 목표는 항상 완료 가능하므로 이 경우는 발생하지 않음
+        return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: contentWidgets,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 회고 다이얼로그 표시
+  void _showReflectionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => ReflectionDialog(
+        goal: widget.goal,
+        onReflectionAdded: () {
+          // ReflectionDialog에서 이미 목표 완료 처리를 했으므로
+          // UI 업데이트만 위해 콜백 호출
+          if (widget.onDataChanged != null) {
+            widget.onDataChanged!();
+          }
+        },
+      ),
+    );
   }
 }
