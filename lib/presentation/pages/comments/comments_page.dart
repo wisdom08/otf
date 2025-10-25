@@ -169,39 +169,32 @@ class _CommentsPageState extends State<CommentsPage> {
   }
 
   Widget _buildEmptyComments() {
-    return SingleChildScrollView(
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.6, // 화면 높이의 60% 사용
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.all(40.w),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.comment_outlined, size: 80.sp, color: Colors.grey[400]),
-                SizedBox(height: 16.h),
-                Text(
-                  '아직 댓글이 없습니다',
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 8.h),
-                Text(
-                  '첫 번째 댓글을 남겨보세요!',
-                  style: TextStyle(
-                    fontSize: 14.sp, 
-                    color: Colors.white70,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.comment_outlined, size: 60.sp, color: Colors.grey[400]),
+          SizedBox(height: 12.h),
+          Text(
+            '아직 댓글이 없습니다',
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
+            textAlign: TextAlign.center,
           ),
-        ),
+          SizedBox(height: 6.h),
+          Text(
+            '첫 번째 댓글을 남겨보세요!',
+            style: TextStyle(
+              fontSize: 12.sp, 
+              color: Colors.white70,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
