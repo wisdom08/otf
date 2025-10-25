@@ -133,18 +133,37 @@ class _CommentsPageState extends State<CommentsPage> {
           Container(
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Colors.grey[200]!)),
+              color: Colors.grey[900],
+              border: Border(top: BorderSide(color: Colors.grey[800]!)),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _commentController,
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16.sp,
+                    ),
                     decoration: InputDecoration(
                       hintText: '댓글을 입력하세요...',
+                      hintStyle: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 16.sp,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24.r),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24.r),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24.r),
+                        borderSide: BorderSide(color: Colors.indigo),
                       ),
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 16.w,
