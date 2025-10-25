@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../services/goal_service.dart';
+import 'confetti_widget.dart';
 
 class ReflectionDialog extends StatefulWidget {
   final Goal goal;
   final Function()? onReflectionAdded;
+  final Function()? onReflectionSaved; // 회고 저장 완료 시 콜백
 
   const ReflectionDialog({
     super.key,
     required this.goal,
     this.onReflectionAdded,
+    this.onReflectionSaved,
   });
 
   @override
   State<ReflectionDialog> createState() => _ReflectionDialogState();
 }
 
-class _ReflectionDialogState extends State<ReflectionDialog> {
+class _ReflectionDialogState extends State<ReflectionDialog>
+    with TickerProviderStateMixin {
   ReflectionType _selectedType = ReflectionType.oneLine;
-  int _rating = 5;
   final List<String> _selectedTags = [];
+  bool _showConfetti = false; // 폭죽 애니메이션 상태
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   // 한 줄 회고
   final TextEditingController _oneLineController = TextEditingController();
@@ -32,76 +38,106 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
   // 이모지 회고
   int _emojiRating = 3; // 1-5 (😫 😕 😐 🙂 😄)
 
-  final List<String> _availableTags = [
-    '성취감',
-    '어려움',
-    '다음계획',
-    '만족',
-    '아쉬움',
-    '도전',
-    '성장',
-    '보람',
-    '피로',
-    '기쁨',
-  ];
+  final List<String> _tags = ['성취감', '도전', '성장', '만족', '보람', '피로', '기쁨'];
 
   final List<String> _emojis = ['😫', '😕', '😐', '🙂', '😄'];
 
   @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _oneLineController.dispose();
+    _keepController.dispose();
+    _problemController.dispose();
+    _tryController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(Icons.psychology, color: Colors.indigo, size: 24.sp),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Text(
-              '목표 완료 회고',
-              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+    return GoalCompletionOverlay(
+      showConfetti: _showConfetti,
+      onConfettiFinished: () {
+        setState(() {
+          _showConfetti = false;
+        });
+      },
+      child: AnimatedBuilder(
+        animation: _fadeAnimation,
+        builder: (context, child) {
+          return Opacity(
+            opacity: _fadeAnimation.value,
+            child: Transform.scale(
+              scale: _fadeAnimation.value,
+              child: AlertDialog(
+                title: Row(
+                  children: [
+                    Icon(Icons.psychology, color: Colors.indigo, size: 24.sp),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        '목표 완료 회고',
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 목표 정보
+                      _buildGoalInfo(),
+                      SizedBox(height: 16.h),
+
+                      // 회고 방식 선택
+                      _buildTypeSelection(),
+                      SizedBox(height: 16.h),
+
+                      // 선택된 방식에 따른 입력 폼
+                      _buildTypeForm(),
+                      SizedBox(height: 16.h),
+
+                      // 태그 선택
+                      _buildTagSelection(),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('취소'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _canSave() ? _saveReflection : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _canSave() ? Colors.indigo : Colors.grey,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('회고 저장'),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          );
+        },
       ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 목표 정보
-            _buildGoalInfo(),
-            SizedBox(height: 16.h),
-
-            // 회고 방식 선택
-            _buildTypeSelection(),
-            SizedBox(height: 16.h),
-
-            // 선택된 방식에 따른 입력 폼
-            _buildTypeForm(),
-            SizedBox(height: 16.h),
-
-            // 만족도 평가
-            _buildRatingSection(),
-            SizedBox(height: 16.h),
-
-            // 태그 선택
-            _buildTagSelection(),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('취소'),
-        ),
-        ElevatedButton(
-          onPressed: _canSave() ? _saveReflection : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.indigo,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('회고 저장'),
-        ),
-      ],
     );
   }
 
@@ -109,28 +145,23 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: Colors.indigo.withOpacity(0.1),
+        color: Colors.grey[100],
         borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.indigo.withOpacity(0.3)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            widget.goal.title,
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.indigo[800],
+          Icon(
+            _getGoalTypeIcon(widget.goal.type),
+            color: _getGoalTypeColor(widget.goal.type),
+            size: 20.sp,
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              widget.goal.title,
+              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
             ),
           ),
-          if (widget.goal.description.isNotEmpty) ...[
-            SizedBox(height: 4.h),
-            Text(
-              widget.goal.description,
-              style: TextStyle(fontSize: 14.sp, color: Colors.indigo[600]),
-            ),
-          ],
         ],
       ),
     );
@@ -141,37 +172,26 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '회고 방식 선택',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+          '회고 방식',
+          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
         ),
         SizedBox(height: 8.h),
         Row(
           children: [
             Expanded(
-              child: _buildTypeOption(
+              child: _buildTypeButton(
                 ReflectionType.oneLine,
-                '📝',
                 '한 줄',
-                '간단한 한 문장',
+                Icons.edit,
               ),
             ),
             SizedBox(width: 8.w),
             Expanded(
-              child: _buildTypeOption(
-                ReflectionType.kpt,
-                '🔍',
-                'KPT',
-                'Keep/Problem/Try',
-              ),
+              child: _buildTypeButton(ReflectionType.kpt, 'KPT', Icons.list),
             ),
             SizedBox(width: 8.w),
             Expanded(
-              child: _buildTypeOption(
-                ReflectionType.emoji,
-                '😄',
-                '이모지',
-                '감정 표현',
-              ),
+              child: _buildTypeButton(ReflectionType.emoji, '이모지', Icons.mood),
             ),
           ],
         ),
@@ -179,12 +199,7 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
     );
   }
 
-  Widget _buildTypeOption(
-    ReflectionType type,
-    String emoji,
-    String title,
-    String subtitle,
-  ) {
+  Widget _buildTypeButton(ReflectionType type, String label, IconData icon) {
     final isSelected = _selectedType == type;
     return GestureDetector(
       onTap: () {
@@ -193,9 +208,9 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
         });
       },
       child: Container(
-        padding: EdgeInsets.all(8.w),
+        padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.indigo : Colors.grey[100],
+          color: isSelected ? Colors.indigo.withOpacity(0.1) : Colors.grey[100],
           borderRadius: BorderRadius.circular(8.r),
           border: Border.all(
             color: isSelected ? Colors.indigo : Colors.grey[300]!,
@@ -204,21 +219,18 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
         ),
         child: Column(
           children: [
-            Text(emoji, style: TextStyle(fontSize: 20.sp)),
+            Icon(
+              icon,
+              color: isSelected ? Colors.indigo : Colors.grey[600],
+              size: 16.sp,
+            ),
             SizedBox(height: 4.h),
             Text(
-              title,
+              label,
               style: TextStyle(
                 fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.grey[700],
-              ),
-            ),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 10.sp,
-                color: isSelected ? Colors.white70 : Colors.grey[500],
+                color: isSelected ? Colors.indigo : Colors.grey[600],
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],
@@ -250,13 +262,14 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
         TextField(
           controller: _oneLineController,
           decoration: InputDecoration(
-            hintText: '예: "꾸준함의 힘을 느낀 하루였다."',
+            hintText: '목표를 완료한 소감을 한 줄로 적어보세요',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8.r),
             ),
             contentPadding: EdgeInsets.all(12.w),
           ),
-          maxLines: 1,
+          maxLines: 3,
+          onChanged: (value) => setState(() {}),
         ),
       ],
     );
@@ -271,26 +284,30 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
           style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
         ),
         SizedBox(height: 8.h),
-        _buildKPTField('Keep (잘한 점)', _keepController, '예: 퇴근 후 1시간 공부'),
+        _buildKPTField('Keep', '잘한 점', _keepController),
         SizedBox(height: 12.h),
-        _buildKPTField('Problem (문제점)', _problemController, '예: 집중력 저하'),
+        _buildKPTField('Problem', '문제점', _problemController),
         SizedBox(height: 12.h),
-        _buildKPTField('Try (다음에 시도할 점)', _tryController, '예: 환경 개선'),
+        _buildKPTField('Try', '다음에 시도할 것', _tryController),
       ],
     );
   }
 
   Widget _buildKPTField(
     String label,
-    TextEditingController controller,
     String hint,
+    TextEditingController controller,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w600,
+            color: _getKPTColor(label),
+          ),
         ),
         SizedBox(height: 4.h),
         TextField(
@@ -300,10 +317,10 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8.r),
             ),
-            contentPadding: EdgeInsets.all(8.w),
-            isDense: true,
+            contentPadding: EdgeInsets.all(12.w),
           ),
           maxLines: 2,
+          onChanged: (value) => setState(() {}),
         ),
       ],
     );
@@ -355,68 +372,19 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
     );
   }
 
-  String _getEmojiDescription(int rating) {
-    switch (rating) {
-      case 1:
-        return '매우 힘들었어요';
-      case 2:
-        return '조금 힘들었어요';
-      case 3:
-        return '보통이었어요';
-      case 4:
-        return '좋았어요';
-      case 5:
-        return '완벽했어요';
-      default:
-        return '';
-    }
-  }
-
-  Widget _buildRatingSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '목표 달성 만족도',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
-        ),
-        SizedBox(height: 8.h),
-        Row(
-          children: List.generate(5, (index) {
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _rating = index + 1;
-                });
-              },
-              child: Container(
-                margin: EdgeInsets.only(right: 8.w),
-                child: Icon(
-                  index < _rating ? Icons.star : Icons.star_border,
-                  color: Colors.amber,
-                  size: 32.sp,
-                ),
-              ),
-            );
-          }),
-        ),
-      ],
-    );
-  }
-
   Widget _buildTagSelection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '태그 선택 (선택사항)',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
         ),
         SizedBox(height: 8.h),
         Wrap(
           spacing: 8.w,
           runSpacing: 8.h,
-          children: _availableTags.map((tag) {
+          children: _tags.map((tag) {
             final isSelected = _selectedTags.contains(tag);
             return GestureDetector(
               onTap: () {
@@ -431,18 +399,23 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.indigo : Colors.grey[200],
+                  color: isSelected
+                      ? Colors.indigo.withOpacity(0.1)
+                      : Colors.grey[100],
                   borderRadius: BorderRadius.circular(16.r),
                   border: Border.all(
                     color: isSelected ? Colors.indigo : Colors.grey[300]!,
+                    width: isSelected ? 2 : 1,
                   ),
                 ),
                 child: Text(
                   tag,
                   style: TextStyle(
                     fontSize: 12.sp,
-                    color: isSelected ? Colors.white : Colors.grey[700],
-                    fontWeight: FontWeight.w500,
+                    color: isSelected ? Colors.indigo : Colors.grey[600],
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
               ),
@@ -462,7 +435,7 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
             _problemController.text.trim().isNotEmpty ||
             _tryController.text.trim().isNotEmpty;
       case ReflectionType.emoji:
-        return true; // 이모지는 항상 선택됨
+        return true; // 이모지는 항상 선택되어 있음
     }
   }
 
@@ -488,27 +461,107 @@ class _ReflectionDialogState extends State<ReflectionDialog> {
         break;
     }
 
-    // 목표 완료 처리와 회고 저장을 함께 수행
-    await GoalService.completeGoalWithReflection(
-      widget.goal.id,
-      content,
-      _rating,
-      tags: _selectedTags,
-      type: _selectedType,
-      typeData: typeData,
-    );
+    try {
+      // 목표 완료 처리와 회고 저장을 함께 수행
+      await GoalService.completeGoalWithReflection(
+        widget.goal.id,
+        content,
+        5, // 기본 만족도 (별 5개)
+        tags: _selectedTags,
+        type: _selectedType,
+        typeData: typeData,
+      );
 
-    if (widget.onReflectionAdded != null) {
-      widget.onReflectionAdded!();
+      print('회고 저장 완료: ${widget.goal.title} - $content');
+
+      // 폭죽 애니메이션 시작
+      setState(() {
+        _showConfetti = true;
+      });
+
+      if (widget.onReflectionAdded != null) {
+        widget.onReflectionAdded!();
+      }
+
+      // 회고 저장 완료 콜백 호출
+      if (widget.onReflectionSaved != null) {
+        widget.onReflectionSaved!();
+      }
+
+      // 페이드 아웃 애니메이션 시작
+      _fadeController.forward();
+
+      // 애니메이션 완료 후 다이얼로그 닫기
+      Future.delayed(const Duration(milliseconds: 500), () {
+        Navigator.pop(context);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('회고가 저장되었습니다! 🎉'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('회고 저장 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('회고 저장 중 오류가 발생했습니다: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+  }
 
-    Navigator.pop(context);
+  IconData _getGoalTypeIcon(GoalType type) {
+    switch (type) {
+      case GoalType.monthly:
+        return Icons.calendar_month;
+      case GoalType.weekly:
+        return Icons.date_range;
+      case GoalType.daily:
+        return Icons.today;
+    }
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('회고가 저장되었습니다! 🎉'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  Color _getGoalTypeColor(GoalType type) {
+    switch (type) {
+      case GoalType.monthly:
+        return Colors.purple;
+      case GoalType.weekly:
+        return Colors.blue;
+      case GoalType.daily:
+        return Colors.green;
+    }
+  }
+
+  Color _getKPTColor(String label) {
+    switch (label) {
+      case 'Keep':
+        return Colors.green;
+      case 'Problem':
+        return Colors.red;
+      case 'Try':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getEmojiDescription(int rating) {
+    switch (rating) {
+      case 1:
+        return '매우 나쁨';
+      case 2:
+        return '나쁨';
+      case 3:
+        return '보통';
+      case 4:
+        return '좋음';
+      case 5:
+        return '매우 좋음';
+      default:
+        return '';
+    }
   }
 }
