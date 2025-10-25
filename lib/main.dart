@@ -11,14 +11,17 @@ void main() async {
   // SharedPreferences 초기화
   await LocalStorageService.init();
 
+  // 현재 사용자 ID 설정
+  await LocalStorageService.setCurrentUserId('current_user');
+
   // 테스트 데이터 초기화
   await GoalService.initializeTestData();
 
-  runApp(const OTFApp());
+  runApp(const WeGrowApp());
 }
 
-class OTFApp extends StatelessWidget {
-  const OTFApp({super.key});
+class WeGrowApp extends StatelessWidget {
+  const WeGrowApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +31,44 @@ class OTFApp extends StatelessWidget {
       splitScreenMode: true,
       builder: (context, child) {
         return MaterialApp(
-          title: 'OTF',
+          title: 'WeGrow',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(primarySwatch: Colors.indigo, useMaterial3: true),
+          theme: ThemeData(
+            primarySwatch: Colors.grey,
+            primaryColor: Colors.black,
+            scaffoldBackgroundColor: Colors.black,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            cardTheme: CardThemeData(
+              color: Colors.grey[900],
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            textTheme: const TextTheme(
+              bodyLarge: TextStyle(color: Colors.white),
+              bodyMedium: TextStyle(color: Colors.white),
+              bodySmall: TextStyle(color: Colors.white70),
+              titleLarge: TextStyle(color: Colors.white),
+              titleMedium: TextStyle(color: Colors.white),
+              titleSmall: TextStyle(color: Colors.white),
+            ),
+            useMaterial3: true,
+          ),
           home: const HomePage(),
         );
       },

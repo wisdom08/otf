@@ -1,5 +1,5 @@
-name: otf
-description: "A new Flutter project."
+name: wegrow
+description: "WeGrow - 성장을 위한 목표 관리 앱"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -46,6 +46,7 @@ dependencies:
   flutter_staggered_animations: ^1.1.1
   fl_chart: ^0.66.0
   table_calendar: ^3.0.9
+  confetti: ^0.7.0
 
 
   # 유틸리티
