@@ -6,8 +6,13 @@ import '../../widgets/reflection_dialog.dart';
 
 class MonthlyGoalDetailPage extends StatefulWidget {
   final Goal monthlyGoal;
+  final VoidCallback? onGoalChanged; // 목표 변경 시 콜백
 
-  const MonthlyGoalDetailPage({super.key, required this.monthlyGoal});
+  const MonthlyGoalDetailPage({
+    super.key,
+    required this.monthlyGoal,
+    this.onGoalChanged,
+  });
 
   @override
   State<MonthlyGoalDetailPage> createState() => _MonthlyGoalDetailPageState();
@@ -553,7 +558,7 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
       (g) => g.id == goalId,
       orElse: () => _currentMonthlyGoal,
     );
-    
+
     if (goal.isCompleted) {
       // 이미 완료된 목표는 미완료 처리 (월간 목표는 회고 없이 바로 처리)
       await GoalService.uncompleteGoal(goalId);
@@ -571,33 +576,38 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
         _showCannotCompleteDialog(goal);
       }
     }
-    
+
     _loadSubGoals();
+
+    // 목표 변경 시 콜백 호출
+    if (widget.onGoalChanged != null) {
+      widget.onGoalChanged!();
+    }
   }
 
   // 월간 목표 완료 가능 여부 확인
   bool _canCompleteMonthlyGoal(Goal monthlyGoal) {
     // 주간 목표들이 모두 완료되었는지 확인
-    final weeklyGoals = GoalService.getSubGoals(monthlyGoal.id)
-        .where((goal) => goal.type == GoalType.weekly)
-        .toList();
-    
+    final weeklyGoals = GoalService.getSubGoals(
+      monthlyGoal.id,
+    ).where((goal) => goal.type == GoalType.weekly).toList();
+
     if (weeklyGoals.isEmpty) {
       return false; // 주간 목표가 없으면 완료할 수 없음
     }
-    
+
     // 모든 주간 목표가 완료되었는지 확인
     final allWeeklyCompleted = weeklyGoals.every((goal) => goal.isCompleted);
     if (!allWeeklyCompleted) {
       return false; // 주간 목표가 모두 완료되지 않았음
     }
-    
+
     // 각 주간 목표의 하위 일간 목표들이 모두 완료되었는지 확인
     for (final weeklyGoal in weeklyGoals) {
-      final dailyGoals = GoalService.getSubGoals(weeklyGoal.id)
-          .where((goal) => goal.type == GoalType.daily)
-          .toList();
-      
+      final dailyGoals = GoalService.getSubGoals(
+        weeklyGoal.id,
+      ).where((goal) => goal.type == GoalType.daily).toList();
+
       if (dailyGoals.isNotEmpty) {
         final allDailyCompleted = dailyGoals.every((goal) => goal.isCompleted);
         if (!allDailyCompleted) {
@@ -605,10 +615,9 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
         }
       }
     }
-    
+
     return true; // 모든 하위 목표가 완료됨
   }
-
 
   // 회고 다이얼로그 표시
   void _showReflectionDialog(Goal goal) {
@@ -620,34 +629,49 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
           // ReflectionDialog에서 이미 목표 완료 처리를 했으므로
           // UI 업데이트만 위해 데이터 새로고침
           _loadSubGoals();
+
+          // 목표 변경 시 콜백 호출
+          if (widget.onGoalChanged != null) {
+            widget.onGoalChanged!();
+          }
+        },
+        onReflectionSaved: () {
+          // 회고 저장 완료 시 추가 처리 (필요시)
+          print('회고 저장 완료 - 상세 페이지에서 처리');
         },
       ),
     );
   }
-
 
   // 완료할 수 없다는 다이얼로그 표시
   void _showCannotCompleteDialog(Goal goal) {
     String title = '완료할 수 없습니다';
     String message = '';
     List<Widget> contentWidgets = [];
-    
+
     switch (goal.type) {
       case GoalType.weekly:
-        final incompleteDailyGoals = GoalService.getSubGoals(goal.id)
-            .where((g) => g.type == GoalType.daily && !g.isCompleted)
-            .toList();
-        
+        final incompleteDailyGoals = GoalService.getSubGoals(
+          goal.id,
+        ).where((g) => g.type == GoalType.daily && !g.isCompleted).toList();
+
         message = '모든 일간 목표를 완료해야 주간 목표를 완료할 수 있습니다.';
         contentWidgets = [
           Text(message),
           const SizedBox(height: 16),
-          const Text('미완료된 일간 목표:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            '미완료된 일간 목표:',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          ...incompleteDailyGoals.take(5).map((g) => Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 4),
-            child: Text('• ${g.title}'),
-          )),
+          ...incompleteDailyGoals
+              .take(5)
+              .map(
+                (g) => Padding(
+                  padding: const EdgeInsets.only(left: 8, bottom: 4),
+                  child: Text('• ${g.title}'),
+                ),
+              ),
           if (incompleteDailyGoals.length > 5)
             Text(
               '... 외 ${incompleteDailyGoals.length - 5}개',
@@ -655,22 +679,29 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
             ),
         ];
         break;
-        
+
       case GoalType.monthly:
-        final incompleteWeeklyGoals = GoalService.getSubGoals(goal.id)
-            .where((g) => g.type == GoalType.weekly && !g.isCompleted)
-            .toList();
-        
+        final incompleteWeeklyGoals = GoalService.getSubGoals(
+          goal.id,
+        ).where((g) => g.type == GoalType.weekly && !g.isCompleted).toList();
+
         message = '모든 주간 목표와 그 하위 일간 목표를 완료해야 월간 목표를 완료할 수 있습니다.';
         contentWidgets = [
           Text(message),
           const SizedBox(height: 16),
-          const Text('미완료된 주간 목표:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            '미완료된 주간 목표:',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          ...incompleteWeeklyGoals.take(5).map((g) => Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 4),
-            child: Text('• ${g.title}'),
-          )),
+          ...incompleteWeeklyGoals
+              .take(5)
+              .map(
+                (g) => Padding(
+                  padding: const EdgeInsets.only(left: 8, bottom: 4),
+                  child: Text('• ${g.title}'),
+                ),
+              ),
           if (incompleteWeeklyGoals.length > 5)
             Text(
               '... 외 ${incompleteWeeklyGoals.length - 5}개',
@@ -678,12 +709,12 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
             ),
         ];
         break;
-        
+
       case GoalType.daily:
         // 일간 목표는 항상 완료 가능하므로 이 경우는 발생하지 않음
         return;
     }
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

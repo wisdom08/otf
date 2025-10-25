@@ -6,6 +6,8 @@ import '../../../services/goal_service.dart';
 import '../goal/goal_creation_wizard.dart';
 import '../goal/monthly_goal_detail_page.dart';
 import '../feed/feed_page.dart';
+import '../profile/profile_page.dart';
+import '../reflection/reflection_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,6 +21,9 @@ class _HomePageState extends State<HomePage> {
   List<Goal> _goals = [];
   int _streak = 0;
   Timer? _timer;
+  final GlobalKey<_GoalTabState> _goalTabKey = GlobalKey<_GoalTabState>();
+  final GlobalKey<ProfilePageState> _profilePageKey =
+      GlobalKey<ProfilePageState>();
 
   @override
   void initState() {
@@ -54,6 +59,16 @@ class _HomePageState extends State<HomePage> {
       _goals = GoalService.getGoals();
       _streak = LocalStorageService.getStreak();
     });
+
+    // 목표 탭과 프로필 페이지도 새로고침 (다음 프레임에서 실행)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_goalTabKey.currentState != null) {
+        _goalTabKey.currentState!._loadGoals();
+      }
+      if (_profilePageKey.currentState != null) {
+        _profilePageKey.currentState!.refreshData();
+      }
+    });
   }
 
   @override
@@ -70,9 +85,10 @@ class _HomePageState extends State<HomePage> {
             onTimeTrackingToggled: _toggleTimeTracking,
             onRefresh: _loadData,
           ),
-          const GoalTab(),
+          GoalTab(key: _goalTabKey, onGoalChanged: _loadData),
           const FeedPage(),
-          const ProfileTab(),
+          ReflectionPage(onReflectionAdded: _loadData),
+          ProfilePage(key: _profilePageKey),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -83,8 +99,10 @@ class _HomePageState extends State<HomePage> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.indigo,
-        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.black,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.grey[600],
+        elevation: 0,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -100,6 +118,11 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.people_outline),
             activeIcon: Icon(Icons.people),
             label: '피드',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.edit_note_outlined),
+            activeIcon: Icon(Icons.edit_note),
+            label: '회고',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -139,6 +162,19 @@ class _HomePageState extends State<HomePage> {
   Future<void> _completeGoal(String goalId) async {
     await GoalService.completeGoal(goalId);
     await _loadData();
+
+    // 진행률 업데이트를 위해 추가 새로고침
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _goals = GoalService.getGoals();
+      });
+      if (_goalTabKey.currentState != null) {
+        _goalTabKey.currentState!._loadGoals();
+      }
+      if (_profilePageKey.currentState != null) {
+        _profilePageKey.currentState!.refreshData();
+      }
+    });
   }
 
   Future<void> _toggleTimeTracking(String goalId) async {
@@ -183,9 +219,10 @@ class HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text(
-          '오늘의 목표',
+          '💪WE GROW!',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -232,20 +269,9 @@ class HomeTab extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Colors.indigo, Colors.indigoAccent],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.grey[900],
         borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.indigo.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        border: Border.all(color: Colors.grey[800]!, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,7 +281,7 @@ class HomeTab extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: const Icon(
@@ -402,8 +428,10 @@ class HomeTab extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                MonthlyGoalDetailPage(monthlyGoal: monthlyGoal),
+            builder: (context) => MonthlyGoalDetailPage(
+              monthlyGoal: monthlyGoal,
+              onGoalChanged: onRefresh,
+            ),
           ),
         );
       },
@@ -731,7 +759,9 @@ class HomeTab extends StatelessWidget {
 }
 
 class GoalTab extends StatefulWidget {
-  const GoalTab({super.key});
+  final VoidCallback? onGoalChanged; // 목표 변경 시 콜백
+
+  const GoalTab({super.key, this.onGoalChanged});
 
   @override
   State<GoalTab> createState() => _GoalTabState();
@@ -761,6 +791,7 @@ class _GoalTabState extends State<GoalTab> {
     final dailyGoals = _goals.where((g) => g.type == GoalType.daily).toList();
 
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text(
           '목표 대시보드',
@@ -798,8 +829,10 @@ class _GoalTabState extends State<GoalTab> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  MonthlyGoalDetailPage(monthlyGoal: goal),
+                              builder: (context) => MonthlyGoalDetailPage(
+                                monthlyGoal: goal,
+                                onGoalChanged: widget.onGoalChanged,
+                              ),
                             ),
                           );
                         }),
@@ -1051,22 +1084,6 @@ class FeedTab extends StatelessWidget {
       body: Center(
         child: Text(
           '피드 탭',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-
-class ProfileTab extends StatelessWidget {
-  const ProfileTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          '프로필 탭',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ),

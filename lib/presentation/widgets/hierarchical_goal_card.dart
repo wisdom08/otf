@@ -296,7 +296,9 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
                                 widget.onGoalCompleted(widget.goal.id);
                               } else {
                                 // 계층적 완료 조건 확인
-                                if (GoalService.canCompleteGoal(widget.goal.id)) {
+                                if (GoalService.canCompleteGoal(
+                                  widget.goal.id,
+                                )) {
                                   _showReflectionDialog();
                                 } else {
                                   _showCannotCompleteDialog();
@@ -496,55 +498,64 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
     }
   }
 
-
   // 완료할 수 없다는 다이얼로그 표시
   void _showCannotCompleteDialog() {
     String title = '완료할 수 없습니다';
     String message = '';
     List<Widget> contentWidgets = [];
-    
+
     switch (widget.goal.type) {
       case GoalType.weekly:
         final incompleteDailyGoals = widget.subGoals
             .where((goal) => goal.type == GoalType.daily && !goal.isCompleted)
             .toList();
-        
+
         message = '모든 일간 목표를 완료해야 주간 목표를 완료할 수 있습니다.';
         contentWidgets = [
           Text(message),
           const SizedBox(height: 16),
-          const Text('미완료된 일간 목표:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            '미완료된 일간 목표:',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          ...incompleteDailyGoals.map((goal) => Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 4),
-            child: Text('• ${goal.title}'),
-          )),
+          ...incompleteDailyGoals.map(
+            (goal) => Padding(
+              padding: const EdgeInsets.only(left: 8, bottom: 4),
+              child: Text('• ${goal.title}'),
+            ),
+          ),
         ];
         break;
-        
+
       case GoalType.monthly:
         final incompleteWeeklyGoals = widget.subGoals
             .where((goal) => goal.type == GoalType.weekly && !goal.isCompleted)
             .toList();
-        
+
         message = '모든 주간 목표와 그 하위 일간 목표를 완료해야 월간 목표를 완료할 수 있습니다.';
         contentWidgets = [
           Text(message),
           const SizedBox(height: 16),
-          const Text('미완료된 주간 목표:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            '미완료된 주간 목표:',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          ...incompleteWeeklyGoals.map((goal) => Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 4),
-            child: Text('• ${goal.title}'),
-          )),
+          ...incompleteWeeklyGoals.map(
+            (goal) => Padding(
+              padding: const EdgeInsets.only(left: 8, bottom: 4),
+              child: Text('• ${goal.title}'),
+            ),
+          ),
         ];
         break;
-        
+
       case GoalType.daily:
         // 일간 목표는 항상 완료 가능하므로 이 경우는 발생하지 않음
         return;
     }
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -576,6 +587,10 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
           if (widget.onDataChanged != null) {
             widget.onDataChanged!();
           }
+        },
+        onReflectionSaved: () {
+          // 회고 저장 완료 시 추가 처리 (필요시)
+          print('회고 저장 완료 - HierarchicalGoalCard에서 처리');
         },
       ),
     );
