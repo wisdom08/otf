@@ -479,37 +479,42 @@ class _ReflectionDialogState extends State<ReflectionDialog>
         _showConfetti = true;
       });
 
-      if (widget.onReflectionAdded != null) {
-        widget.onReflectionAdded!();
-      }
-
-      // 회고 저장 완료 콜백 호출
-      if (widget.onReflectionSaved != null) {
-        widget.onReflectionSaved!();
-      }
-
       // 페이드 아웃 애니메이션 시작
-      _fadeController.forward();
+      await _fadeController.forward();
 
       // 애니메이션 완료 후 다이얼로그 닫기
-      Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
         Navigator.pop(context);
-      });
+        
+        // 콜백 호출 (다이얼로그가 닫힌 후)
+        if (widget.onReflectionAdded != null) {
+          widget.onReflectionAdded!();
+        }
+        
+        if (widget.onReflectionSaved != null) {
+          widget.onReflectionSaved!();
+        }
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('회고가 저장되었습니다! 🎉'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // 성공 메시지 표시
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('회고가 저장되었습니다! 🎉'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
       print('회고 저장 오류: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('회고 저장 중 오류가 발생했습니다: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('회고 저장 중 오류가 발생했습니다: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

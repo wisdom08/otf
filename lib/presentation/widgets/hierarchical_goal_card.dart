@@ -588,10 +588,6 @@ class _HierarchicalGoalCardState extends State<HierarchicalGoalCard> {
             widget.onDataChanged!();
           }
         },
-        onReflectionSaved: () {
-          // 회고 저장 완료 시 추가 처리 (필요시)
-          print('회고 저장 완료 - HierarchicalGoalCard에서 처리');
-        },
       ),
     );
   }

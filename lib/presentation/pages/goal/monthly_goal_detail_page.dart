@@ -585,40 +585,6 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
     }
   }
 
-  // 월간 목표 완료 가능 여부 확인
-  bool _canCompleteMonthlyGoal(Goal monthlyGoal) {
-    // 주간 목표들이 모두 완료되었는지 확인
-    final weeklyGoals = GoalService.getSubGoals(
-      monthlyGoal.id,
-    ).where((goal) => goal.type == GoalType.weekly).toList();
-
-    if (weeklyGoals.isEmpty) {
-      return false; // 주간 목표가 없으면 완료할 수 없음
-    }
-
-    // 모든 주간 목표가 완료되었는지 확인
-    final allWeeklyCompleted = weeklyGoals.every((goal) => goal.isCompleted);
-    if (!allWeeklyCompleted) {
-      return false; // 주간 목표가 모두 완료되지 않았음
-    }
-
-    // 각 주간 목표의 하위 일간 목표들이 모두 완료되었는지 확인
-    for (final weeklyGoal in weeklyGoals) {
-      final dailyGoals = GoalService.getSubGoals(
-        weeklyGoal.id,
-      ).where((goal) => goal.type == GoalType.daily).toList();
-
-      if (dailyGoals.isNotEmpty) {
-        final allDailyCompleted = dailyGoals.every((goal) => goal.isCompleted);
-        if (!allDailyCompleted) {
-          return false; // 일간 목표가 모두 완료되지 않았음
-        }
-      }
-    }
-
-    return true; // 모든 하위 목표가 완료됨
-  }
-
   // 회고 다이얼로그 표시
   void _showReflectionDialog(Goal goal) {
     showDialog(
@@ -634,10 +600,6 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
           if (widget.onGoalChanged != null) {
             widget.onGoalChanged!();
           }
-        },
-        onReflectionSaved: () {
-          // 회고 저장 완료 시 추가 처리 (필요시)
-          print('회고 저장 완료 - 상세 페이지에서 처리');
         },
       ),
     );
