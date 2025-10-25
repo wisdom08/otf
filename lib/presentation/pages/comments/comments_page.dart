@@ -3,9 +3,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../services/goal_service.dart';
 
 class CommentsPage extends StatefulWidget {
-  final Goal goal;
+  final Goal? goal;
+  final Reflection? reflection;
 
-  const CommentsPage({super.key, required this.goal});
+  const CommentsPage({super.key, this.goal, this.reflection})
+      : assert(goal != null || reflection != null, 'Either goal or reflection must be provided');
 
   @override
   State<CommentsPage> createState() => _CommentsPageState();
@@ -22,10 +24,11 @@ class _CommentsPageState extends State<CommentsPage> {
   }
 
   void _loadComments() {
+    final targetId = widget.goal?.id ?? widget.reflection!.id;
     setState(() {
-      _comments = GoalService.getSocialActions(
-        widget.goal.id,
-      ).where((action) => action.type == SocialActionType.comment).toList();
+      _comments = GoalService.getSocialActions(targetId)
+          .where((action) => action.type == SocialActionType.comment)
+          .toList();
       _comments.sort((a, b) => b.createdAt.compareTo(a.createdAt)); // 최신순
     });
   }
@@ -44,7 +47,7 @@ class _CommentsPageState extends State<CommentsPage> {
       ),
       body: Column(
         children: [
-          // 목표 정보
+          // 목표/회고 정보
           Container(
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
@@ -56,12 +59,18 @@ class _CommentsPageState extends State<CommentsPage> {
                 Container(
                   padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
-                    color: _getTypeColor(widget.goal.type).withOpacity(0.1),
+                    color: widget.goal != null 
+                        ? _getTypeColor(widget.goal!.type).withOpacity(0.1)
+                        : Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(
-                    _getTypeIcon(widget.goal.type),
-                    color: _getTypeColor(widget.goal.type),
+                    widget.goal != null 
+                        ? _getTypeIcon(widget.goal!.type)
+                        : Icons.psychology,
+                    color: widget.goal != null 
+                        ? _getTypeColor(widget.goal!.type)
+                        : Colors.orange,
                     size: 20.sp,
                   ),
                 ),
@@ -71,15 +80,25 @@ class _CommentsPageState extends State<CommentsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.goal.title,
+                        widget.goal?.title ?? '회고',
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (widget.goal.description.isNotEmpty)
+                      if (widget.goal?.description.isNotEmpty == true)
                         Text(
-                          widget.goal.description,
+                          widget.goal!.description,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: Colors.grey[600],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      if (widget.reflection != null)
+                        Text(
+                          widget.reflection!.content,
                           style: TextStyle(
                             fontSize: 14.sp,
                             color: Colors.grey[600],
@@ -279,7 +298,7 @@ class _CommentsPageState extends State<CommentsPage> {
 
     try {
       await GoalService.addSocialAction(
-        widget.goal.id,
+        widget.goal?.id ?? widget.reflection!.id,
         SocialActionType.comment,
         content: content,
       );

@@ -13,7 +13,6 @@ class FeedPage extends StatefulWidget {
 
 class _FeedPageState extends State<FeedPage> {
   List<Goal> _feedGoals = [];
-  GoalPrivacy? _selectedFilter;
   bool _isLoading = true;
 
   @override
@@ -94,16 +93,10 @@ class _FeedPageState extends State<FeedPage> {
     return items;
   }
 
-  List<Goal> get _filteredGoals {
-    if (_selectedFilter == null) {
-      return _feedGoals;
-    }
-    return _feedGoals.where((goal) => goal.privacy == _selectedFilter).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text('피드', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
@@ -114,9 +107,7 @@ class _FeedPageState extends State<FeedPage> {
           PopupMenuButton<GoalPrivacy?>(
             icon: const Icon(Icons.filter_list),
             onSelected: (privacy) {
-              setState(() {
-                _selectedFilter = privacy;
-              });
+              // 필터링 기능은 현재 사용하지 않음
             },
             itemBuilder: (context) => [
               const PopupMenuItem(value: null, child: Text('전체')),
@@ -853,6 +844,10 @@ class _FeedPageState extends State<FeedPage> {
                 }).toList(),
               ),
             ],
+
+            // 액션 버튼들
+            SizedBox(height: 12.h),
+            _buildReflectionActionButtons(reflection),
           ],
         ),
       ),
@@ -1075,5 +1070,78 @@ class _FeedPageState extends State<FeedPage> {
       default:
         return '';
     }
+  }
+
+  // 회고 액션 버튼들
+  Widget _buildReflectionActionButtons(Reflection reflection) {
+    final likeCount = GoalService.getReflectionLikeCount(reflection.id);
+    final commentCount = GoalService.getReflectionCommentCount(reflection.id);
+    final shareCount = GoalService.getReflectionShareCount(reflection.id);
+    final isLiked = GoalService.hasUserLikedReflection(reflection.id);
+
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActionButton(
+            icon: isLiked ? Icons.favorite : Icons.favorite_border,
+            label: '좋아요',
+            count: likeCount,
+            color: isLiked ? Colors.red : Colors.grey[600]!,
+            onPressed: () => _toggleReflectionLike(reflection.id),
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: _buildActionButton(
+            icon: Icons.comment_outlined,
+            label: '댓글',
+            count: commentCount,
+            color: Colors.grey[600]!,
+            onPressed: () => _showReflectionCommentsPage(reflection),
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: _buildActionButton(
+            icon: Icons.share_outlined,
+            label: '공유',
+            count: shareCount,
+            color: Colors.grey[600]!,
+            onPressed: () => _shareReflection(reflection),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 회고 좋아요 토글
+  Future<void> _toggleReflectionLike(String reflectionId) async {
+    await GoalService.toggleReflectionLike(reflectionId);
+    setState(() {
+      // UI 업데이트를 위해 상태 갱신
+    });
+  }
+
+  // 회고 공유하기
+  Future<void> _shareReflection(Reflection reflection) async {
+    await GoalService.shareReflection(reflection.id);
+
+    // 공유 완료 메시지
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${reflection.content} 회고를 공유했습니다!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  // 회고 댓글 페이지 표시
+  void _showReflectionCommentsPage(Reflection reflection) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CommentsPage(reflection: reflection),
+      ),
+    );
   }
 }
