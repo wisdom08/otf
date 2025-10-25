@@ -36,6 +36,7 @@ class _CommentsPageState extends State<CommentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: Text(
           '댓글 (${_comments.length})',
@@ -51,8 +52,8 @@ class _CommentsPageState extends State<CommentsPage> {
           Container(
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+              color: Colors.grey[900],
+              border: Border(bottom: BorderSide(color: Colors.grey[800]!)),
             ),
             child: Row(
               children: [
@@ -84,6 +85,7 @@ class _CommentsPageState extends State<CommentsPage> {
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
                       if (widget.goal?.description.isNotEmpty == true)
@@ -91,7 +93,7 @@ class _CommentsPageState extends State<CommentsPage> {
                           widget.goal!.description,
                           style: TextStyle(
                             fontSize: 14.sp,
-                            color: Colors.grey[600],
+                            color: Colors.white70,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -101,7 +103,7 @@ class _CommentsPageState extends State<CommentsPage> {
                           widget.reflection!.content,
                           style: TextStyle(
                             fontSize: 14.sp,
-                            color: Colors.grey[600],
+                            color: Colors.white70,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -168,25 +170,33 @@ class _CommentsPageState extends State<CommentsPage> {
 
   Widget _buildEmptyComments() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.comment_outlined, size: 80.sp, color: Colors.grey[400]),
-          SizedBox(height: 16.h),
-          Text(
-            '아직 댓글이 없습니다',
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+      child: Padding(
+        padding: EdgeInsets.all(40.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.comment_outlined, size: 80.sp, color: Colors.grey[400]),
+            SizedBox(height: 16.h),
+            Text(
+              '아직 댓글이 없습니다',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            '첫 번째 댓글을 남겨보세요!',
-            style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
-          ),
-        ],
+            SizedBox(height: 8.h),
+            Text(
+              '첫 번째 댓글을 남겨보세요!',
+              style: TextStyle(
+                fontSize: 14.sp, 
+                color: Colors.white70,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
