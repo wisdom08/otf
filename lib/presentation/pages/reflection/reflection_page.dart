@@ -84,7 +84,7 @@ class _ReflectionPageState extends State<ReflectionPage> {
             '회고를 불러오는 중...',
             style: GoogleFonts.notoSans(
               fontSize: 16.sp,
-              color: Colors.grey[600],
+              color: Colors.white70,
             ),
           ),
         ],
@@ -118,7 +118,7 @@ class _ReflectionPageState extends State<ReflectionPage> {
               style: GoogleFonts.notoSans(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
+                color: Colors.white,
               ),
               textAlign: TextAlign.center,
             ),
@@ -127,7 +127,7 @@ class _ReflectionPageState extends State<ReflectionPage> {
               '목표를 완료하고 회고를 작성해보세요!\n회고를 통해 성장의 발자취를 남겨보세요.',
               style: GoogleFonts.notoSans(
                 fontSize: 14.sp,
-                color: Colors.grey[600],
+                color: Colors.white70,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,

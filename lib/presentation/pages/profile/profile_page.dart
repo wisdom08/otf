@@ -414,15 +414,9 @@ class ProfilePageState extends State<ProfilePage> {
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.grey[900],
         borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: Colors.grey[800]!, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,7 +428,7 @@ class ProfilePageState extends State<ProfilePage> {
                 style: GoogleFonts.notoSans(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Colors.white,
                 ),
               ),
               const Spacer(),
@@ -444,7 +438,7 @@ class ProfilePageState extends State<ProfilePage> {
                     '${reflections.length}개',
                     style: GoogleFonts.notoSans(
                       fontSize: 14.sp,
-                      color: Colors.grey[600],
+                      color: Colors.white70,
                     ),
                   ),
                   SizedBox(width: 8.w),
@@ -484,7 +478,7 @@ class ProfilePageState extends State<ProfilePage> {
                     '아직 작성한 회고가 없습니다',
                     style: GoogleFonts.notoSans(
                       fontSize: 14.sp,
-                      color: Colors.grey[600],
+                      color: Colors.white70,
                     ),
                   ),
                   SizedBox(height: 4.h),
@@ -492,7 +486,7 @@ class ProfilePageState extends State<ProfilePage> {
                     '목표를 완료하고 회고를 작성해보세요!',
                     style: GoogleFonts.notoSans(
                       fontSize: 12.sp,
-                      color: Colors.grey[500],
+                      color: Colors.white60,
                     ),
                   ),
                 ],

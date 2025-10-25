@@ -92,6 +92,7 @@ class _ReflectionDialogState extends State<ReflectionDialog>
                         style: TextStyle(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
                       ),
                     ),
@@ -122,7 +123,7 @@ class _ReflectionDialogState extends State<ReflectionDialog>
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('취소'),
+                    child: const Text('취소', style: TextStyle(color: Colors.grey)),
                   ),
                   ElevatedButton(
                     onPressed: _canSave() ? _saveReflection : null,
@@ -159,7 +160,11 @@ class _ReflectionDialogState extends State<ReflectionDialog>
           Expanded(
             child: Text(
               widget.goal.title,
-              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 14.sp, 
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
           ),
         ],
@@ -173,7 +178,11 @@ class _ReflectionDialogState extends State<ReflectionDialog>
       children: [
         Text(
           '회고 방식',
-          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 14.sp, 
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
         ),
         SizedBox(height: 8.h),
         Row(
@@ -378,7 +387,11 @@ class _ReflectionDialogState extends State<ReflectionDialog>
       children: [
         Text(
           '태그 선택 (선택사항)',
-          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 14.sp, 
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
         ),
         SizedBox(height: 8.h),
         Wrap(
