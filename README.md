@@ -233,5 +233,4 @@ WeGrow는 단순한 할 일 관리 앱을 넘어서, 사용자의 진정한 성�
 
 **개발 기간**: 2025년 10월 26일 - 진행 중
 **개발 환경**: Flutter 3.32.6, Dart  
-**플랫폼**: iOS, Android, macOS, Web  
-**라이선스**: MIT
+**플랫폼**: iOS, Android, macOS, Web
