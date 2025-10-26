@@ -1290,6 +1290,67 @@ class GoalService {
       typeData: {'emoji': '😄', 'rating': 5},
     );
 
+    // 어제 작성한 회고들 추가
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    
+    // Alice의 어제 회고 (한 줄 회고)
+    final aliceYesterdayReflection = Reflection(
+      id: 'reflection_alice_yesterday',
+      goalId: 'goal_alice_3',
+      userId: 'alice_kim',
+      content: '어제는 독서를 통해 새로운 인사이트를 얻었어요. 꾸준함의 힘을 느꼈습니다.',
+      createdAt: yesterday,
+      rating: 4,
+      tags: ['독서', '성찰'],
+      type: ReflectionType.oneLine,
+    );
+    _reflections.add(aliceYesterdayReflection);
+
+    // Bob의 어제 회고 (KPT 회고)
+    final bobYesterdayReflection = Reflection(
+      id: 'reflection_bob_yesterday',
+      goalId: 'goal_bob_2',
+      userId: 'bob_dev',
+      content: '어제 코딩 프로젝트 완성',
+      createdAt: yesterday,
+      rating: 5,
+      tags: ['프로젝트', '완성'],
+      type: ReflectionType.kpt,
+      typeData: {
+        'keep': '체계적인 코드 구조 설계',
+        'problem': '디버깅 시간이 예상보다 오래 걸림',
+        'try': '테스트 코드를 먼저 작성하는 TDD 방식 도입',
+      },
+    );
+    _reflections.add(bobYesterdayReflection);
+
+    // David의 어제 회고 (이모지 회고)
+    final davidYesterdayReflection = Reflection(
+      id: 'reflection_david_yesterday',
+      goalId: 'goal_david_2',
+      userId: 'david_eng',
+      content: '이모지 회고: 🙂',
+      createdAt: yesterday,
+      rating: 4,
+      tags: ['영어', '만족'],
+      type: ReflectionType.emoji,
+      typeData: {'emoji': '🙂', 'rating': 4},
+    );
+    _reflections.add(davidYesterdayReflection);
+
+    // Emma의 어제 회고 (한 줄 회고)
+    final emmaYesterdayReflection = Reflection(
+      id: 'reflection_emma_yesterday',
+      goalId: 'goal_emma_2',
+      userId: 'emma_music',
+      content: '피아노 연습이 점점 재미있어지고 있어요. 새로운 곡에 도전해볼까요?',
+      createdAt: yesterday,
+      rating: 4,
+      tags: ['피아노', '재미'],
+      type: ReflectionType.oneLine,
+    );
+    _reflections.add(emmaYesterdayReflection);
+
     await saveGoals();
     await LocalStorageService.saveGoals(_goals.map((g) => g.toMap()).toList());
     await LocalStorageService.saveReflections(
