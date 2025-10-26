@@ -32,10 +32,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text(
-          '목표 설정 마법사',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('목표 설정 마법사', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -123,10 +120,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
             SizedBox(height: 8.h),
             Text(
               '이번 달에 달성하고 싶은 큰 목표를 설정해주세요.',
-              style: TextStyle(
-                fontSize: 16.sp,
-                color: Colors.white70,
-              ),
+              style: TextStyle(fontSize: 16.sp, color: Colors.white70),
             ),
             SizedBox(height: 24.h),
 
@@ -197,7 +191,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
               value: _monthlyPrivacy,
               decoration: const InputDecoration(
                 labelText: '공개 설정',
-                labelStyle: TextStyle(color: Colors.black87),
+                labelStyle: TextStyle(color: Colors.grey),
                 border: OutlineInputBorder(),
                 helperText: '목표를 누구와 공유할지 선택하세요',
                 helperStyle: TextStyle(color: Colors.grey),
@@ -256,7 +250,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 labelText: '목표 설명',
-                labelStyle: TextStyle(color: Colors.black87),
+                labelStyle: TextStyle(color: Colors.grey),
                 hintText: '구체적인 목표 내용을 작성해주세요',
                 hintStyle: TextStyle(color: Colors.grey),
                 border: OutlineInputBorder(),
@@ -274,7 +268,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 labelText: '목표 시간 (분) - 선택사항',
-                labelStyle: TextStyle(color: Colors.black87),
+                labelStyle: TextStyle(color: Colors.grey),
                 hintText: '예: 120 (2시간)',
                 hintStyle: TextStyle(color: Colors.grey),
                 border: OutlineInputBorder(),
@@ -309,10 +303,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
           SizedBox(height: 8.h),
           Text(
             '월간 목표를 달성하기 위한 주간 목표를 설정해주세요.',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: Colors.white70,
-            ),
+            style: TextStyle(fontSize: 16.sp, color: Colors.white70),
           ),
           SizedBox(height: 24.h),
 
@@ -461,10 +452,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
           SizedBox(height: 8.h),
           Text(
             '주간 목표를 달성하기 위한 오늘의 목표를 설정해주세요.',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: Colors.white70,
-            ),
+            style: TextStyle(fontSize: 16.sp, color: Colors.white70),
           ),
           SizedBox(height: 24.h),
 
@@ -551,10 +539,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
           SizedBox(height: 8.h),
           Text(
             '설정한 목표들을 확인하고 생성해주세요.',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: Colors.white70,
-            ),
+            style: TextStyle(fontSize: 16.sp, color: Colors.white70),
           ),
           SizedBox(height: 24.h),
 
@@ -782,10 +767,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          title,
-          style: const TextStyle(color: Colors.white),
-        ),
+        title: Text(title, style: const TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -825,10 +807,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              '취소',
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text('취소', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -842,10 +821,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
                 Navigator.pop(context);
               }
             },
-            child: const Text(
-              '추가',
-              style: TextStyle(color: Colors.black87),
-            ),
+             child: const Text('추가', style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
