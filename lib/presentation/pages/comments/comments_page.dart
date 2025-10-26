@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../services/goal_service.dart';
+import '../../../services/local_storage_service.dart';
 
 class CommentsPage extends StatefulWidget {
   final Goal? goal;
@@ -254,7 +255,7 @@ class _CommentsPageState extends State<CommentsPage> {
                     ],
                   ),
                 ),
-                if (comment.userId == 'current_user')
+                if (comment.userId == LocalStorageService.getCurrentUserId())
                   PopupMenuButton<String>(
                     onSelected: (value) {
                       if (value == 'delete') {
@@ -347,12 +348,21 @@ class _CommentsPageState extends State<CommentsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('댓글 삭제'),
-        content: const Text('이 댓글을 삭제하시겠습니까?'),
+        title: const Text(
+          '댓글 삭제',
+          style: TextStyle(color: Colors.black),
+        ),
+        content: const Text(
+          '이 댓글을 삭제하시겠습니까?',
+          style: TextStyle(color: Colors.black),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소'),
+            child: const Text(
+              '취소',
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -367,11 +377,23 @@ class _CommentsPageState extends State<CommentsPage> {
     );
 
     if (confirmed == true) {
-      // 댓글 삭제 로직 (GoalService에 삭제 메서드 추가 필요)
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('댓글이 삭제되었습니다.')));
-      _loadComments();
+      try {
+        await GoalService.deleteComment(comment.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('댓글이 삭제되었습니다.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadComments();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('댓글 삭제 중 오류가 발생했습니다: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

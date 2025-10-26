@@ -391,10 +391,11 @@ class HomeTab extends StatelessWidget {
       );
     }
 
-    // 월간 목표만 표시
+    // 월간 목표만 표시 (최근 생성된 순으로 정렬)
     final monthlyGoals = goals
         .where((g) => g.type == GoalType.monthly)
-        .toList();
+        .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     if (monthlyGoals.isEmpty) {
       return const Center(
@@ -586,7 +587,7 @@ class HomeTab extends StatelessWidget {
               '목표 생성 방법을 선택하세요',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Colors.black,
               ),
             ),
             SizedBox(height: 16.h),
@@ -787,9 +788,16 @@ class _GoalTabState extends State<GoalTab> {
   Widget build(BuildContext context) {
     final monthlyGoals = _goals
         .where((g) => g.type == GoalType.monthly)
-        .toList();
-    final weeklyGoals = _goals.where((g) => g.type == GoalType.weekly).toList();
-    final dailyGoals = _goals.where((g) => g.type == GoalType.daily).toList();
+        .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final weeklyGoals = _goals
+        .where((g) => g.type == GoalType.weekly)
+        .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final dailyGoals = _goals
+        .where((g) => g.type == GoalType.daily)
+        .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return Scaffold(
       backgroundColor: Colors.black,

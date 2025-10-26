@@ -1007,7 +1007,8 @@ class GoalService {
     return _socialActions
         .where(
           (action) =>
-              action.goalId == reflectionId && action.type == SocialActionType.like,
+              action.goalId == reflectionId &&
+              action.type == SocialActionType.like,
         )
         .length;
   }
@@ -1026,7 +1027,8 @@ class GoalService {
     return _socialActions
         .where(
           (action) =>
-              action.goalId == reflectionId && action.type == SocialActionType.share,
+              action.goalId == reflectionId &&
+              action.type == SocialActionType.share,
         )
         .length;
   }
@@ -1069,6 +1071,12 @@ class GoalService {
 
   static Future<void> shareReflection(String reflectionId) async {
     await addSocialAction(reflectionId, SocialActionType.share);
+    await _saveSocialActions();
+  }
+
+  // 댓글 삭제
+  static Future<void> deleteComment(String commentId) async {
+    _socialActions.removeWhere((action) => action.id == commentId);
     await _saveSocialActions();
   }
 
@@ -1292,7 +1300,7 @@ class GoalService {
 
     // 어제 작성한 회고들 추가
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    
+
     // Alice의 어제 회고 (한 줄 회고)
     final aliceYesterdayReflection = Reflection(
       id: 'reflection_alice_yesterday',
