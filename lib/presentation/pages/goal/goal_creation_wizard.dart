@@ -30,10 +30,17 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('목표 설정 마법사'),
+        title: const Text(
+          '목표 설정 마법사',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -107,16 +114,19 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
           children: [
             Text(
               '1단계: 월간 목표 설정',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             SizedBox(height: 8.h),
             Text(
               '이번 달에 달성하고 싶은 큰 목표를 설정해주세요.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 16.sp,
+                color: Colors.white70,
+              ),
             ),
             SizedBox(height: 24.h),
 
@@ -128,13 +138,19 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
                     value: _selectedYear,
                     decoration: const InputDecoration(
                       labelText: '년도',
+                      labelStyle: TextStyle(color: Colors.black87),
                       border: OutlineInputBorder(),
                     ),
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: Colors.white),
                     items: List.generate(5, (index) {
                       final year = DateTime.now().year + index;
                       return DropdownMenuItem(
                         value: year,
-                        child: Text('$year년'),
+                        child: Text(
+                          '$year년',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       );
                     }),
                     onChanged: (value) {
@@ -150,13 +166,19 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
                     value: _selectedMonth,
                     decoration: const InputDecoration(
                       labelText: '월',
+                      labelStyle: TextStyle(color: Colors.black87),
                       border: OutlineInputBorder(),
                     ),
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: Colors.white),
                     items: List.generate(12, (index) {
                       final month = index + 1;
                       return DropdownMenuItem(
                         value: month,
-                        child: Text('$month월'),
+                        child: Text(
+                          '$month월',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       );
                     }),
                     onChanged: (value) {
@@ -175,9 +197,13 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
               value: _monthlyPrivacy,
               decoration: const InputDecoration(
                 labelText: '공개 설정',
+                labelStyle: TextStyle(color: Colors.black87),
                 border: OutlineInputBorder(),
                 helperText: '목표를 누구와 공유할지 선택하세요',
+                helperStyle: TextStyle(color: Colors.grey),
               ),
+              dropdownColor: Colors.white,
+              style: const TextStyle(color: Colors.white),
               items: GoalPrivacy.values.map((privacy) {
                 return DropdownMenuItem(
                   value: privacy,
@@ -189,7 +215,10 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
                         color: _getPrivacyColor(privacy),
                       ),
                       SizedBox(width: 8.w),
-                      Text(GoalService.getPrivacyLabel(privacy)),
+                      Text(
+                        GoalService.getPrivacyLabel(privacy),
+                        style: const TextStyle(color: Colors.grey),
+                      ),
                     ],
                   ),
                 );
@@ -204,9 +233,12 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
 
             TextField(
               key: const ValueKey('monthly_title'),
+              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 labelText: '월간 목표 제목',
+                labelStyle: const TextStyle(color: Colors.white),
                 hintText: '예: Flutter 앱 개발 완성하기',
+                hintStyle: const TextStyle(color: Colors.grey),
                 border: const OutlineInputBorder(),
                 suffixIcon: _monthlyTitle.isNotEmpty
                     ? const Icon(Icons.check_circle, color: Colors.green)
@@ -221,9 +253,12 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
             SizedBox(height: 16.h),
 
             TextField(
+              style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 labelText: '목표 설명',
+                labelStyle: TextStyle(color: Colors.black87),
                 hintText: '구체적인 목표 내용을 작성해주세요',
+                hintStyle: TextStyle(color: Colors.grey),
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
@@ -236,9 +271,12 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
             SizedBox(height: 16.h),
 
             TextField(
+              style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 labelText: '목표 시간 (분) - 선택사항',
+                labelStyle: TextStyle(color: Colors.black87),
                 hintText: '예: 120 (2시간)',
+                hintStyle: TextStyle(color: Colors.grey),
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
@@ -262,16 +300,19 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
         children: [
           Text(
             '2단계: 주간 목표 설정',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 24.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           SizedBox(height: 8.h),
           Text(
             '월간 목표를 달성하기 위한 주간 목표를 설정해주세요.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 16.sp,
+              color: Colors.white70,
+            ),
           ),
           SizedBox(height: 24.h),
 
@@ -411,16 +452,19 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
         children: [
           Text(
             '3단계: 오늘의 목표 설정',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 24.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           SizedBox(height: 8.h),
           Text(
             '주간 목표를 달성하기 위한 오늘의 목표를 설정해주세요.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 16.sp,
+              color: Colors.white70,
+            ),
           ),
           SizedBox(height: 24.h),
 
@@ -498,16 +542,19 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
         children: [
           Text(
             '4단계: 목표 확인',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 24.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           SizedBox(height: 8.h),
           Text(
             '설정한 목표들을 확인하고 생성해주세요.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 16.sp,
+              color: Colors.white70,
+            ),
           ),
           SizedBox(height: 24.h),
 
@@ -735,22 +782,29 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
+        title: Text(
+          title,
+          style: const TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: titleController,
+              style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 labelText: '목표 제목',
+                labelStyle: TextStyle(color: Colors.black87),
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: descriptionController,
+              style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 labelText: '목표 설명',
+                labelStyle: TextStyle(color: Colors.black87),
                 border: OutlineInputBorder(),
               ),
               maxLines: 2,
@@ -758,8 +812,10 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
             const SizedBox(height: 16),
             TextField(
               controller: targetController,
+              style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 labelText: '목표 시간 (분) - 선택사항',
+                labelStyle: TextStyle(color: Colors.black87),
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
@@ -769,7 +825,10 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
+            child: const Text(
+              '취소',
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -783,7 +842,10 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
                 Navigator.pop(context);
               }
             },
-            child: const Text('추가'),
+            child: const Text(
+              '추가',
+              style: TextStyle(color: Colors.black87),
+            ),
           ),
         ],
       ),

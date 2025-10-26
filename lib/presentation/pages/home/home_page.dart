@@ -584,9 +584,10 @@ class HomeTab extends StatelessWidget {
           children: [
             Text(
               '목표 생성 방법을 선택하세요',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             SizedBox(height: 16.h),
 
