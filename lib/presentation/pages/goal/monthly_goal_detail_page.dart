@@ -344,7 +344,10 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('하위 목표 추가'),
+          title: const Text(
+            '하위 목표 추가',
+            style: TextStyle(color: Colors.black87),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -354,16 +357,25 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
                   value: selectedType,
                   decoration: const InputDecoration(
                     labelText: '목표 기간',
+                    labelStyle: TextStyle(color: Colors.black87),
                     border: OutlineInputBorder(),
                   ),
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(color: Colors.black87),
                   items: [
                     DropdownMenuItem(
                       value: GoalType.weekly,
-                      child: Text(_getTypeLabel(GoalType.weekly)),
+                      child: Text(
+                        _getTypeLabel(GoalType.weekly),
+                        style: const TextStyle(color: Colors.black87),
+                      ),
                     ),
                     DropdownMenuItem(
                       value: GoalType.daily,
-                      child: Text(_getTypeLabel(GoalType.daily)),
+                      child: Text(
+                        _getTypeLabel(GoalType.daily),
+                        style: const TextStyle(color: Colors.black87),
+                      ),
                     ),
                   ],
                   onChanged: (value) {
@@ -382,7 +394,7 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
                     style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w600,
-                      color: Colors.blue[800],
+                      color: Colors.black87,
                     ),
                   ),
                   SizedBox(height: 8.h),
@@ -417,7 +429,7 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
                               style: TextStyle(
                                 color: isSelected
                                     ? Colors.white
-                                    : Colors.blue[600],
+                                    : Colors.black87,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -435,8 +447,11 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
                     value: parentGoalId,
                     decoration: const InputDecoration(
                       labelText: '주간 목표 선택',
+                      labelStyle: TextStyle(color: Colors.black87),
                       border: OutlineInputBorder(),
                     ),
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: Colors.black87),
                     items: GoalService.getGoalsByType(GoalType.weekly)
                         .where(
                           (goal) => goal.parentGoalId == _currentMonthlyGoal.id,
@@ -444,7 +459,10 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
                         .map((goal) {
                           return DropdownMenuItem(
                             value: goal.id,
-                            child: Text(goal.title),
+                            child: Text(
+                              goal.title,
+                              style: const TextStyle(color: Colors.black87),
+                            ),
                           );
                         })
                         .toList(),
@@ -458,8 +476,10 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
 
                 TextField(
                   controller: titleController,
+                  style: const TextStyle(color: Colors.black87),
                   decoration: const InputDecoration(
                     labelText: '목표 제목',
+                    labelStyle: TextStyle(color: Colors.black87),
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -467,8 +487,10 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
 
                 TextField(
                   controller: descriptionController,
+                  style: const TextStyle(color: Colors.black87),
                   decoration: const InputDecoration(
                     labelText: '목표 설명',
+                    labelStyle: TextStyle(color: Colors.black87),
                     border: OutlineInputBorder(),
                   ),
                   maxLines: 3,
@@ -477,8 +499,10 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
 
                 TextField(
                   controller: targetMinutesController,
+                  style: const TextStyle(color: Colors.black87),
                   decoration: const InputDecoration(
                     labelText: '목표 시간 (분) - 선택사항',
+                    labelStyle: TextStyle(color: Colors.black87),
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
@@ -489,7 +513,10 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('취소'),
+              child: const Text(
+                '취소',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
@@ -514,7 +541,10 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
                   );
                 }
               },
-              child: const Text('추가'),
+              child: const Text(
+                '추가',
+                style: TextStyle(color: Colors.black87),
+              ),
             ),
           ],
         ),
