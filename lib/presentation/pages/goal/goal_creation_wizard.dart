@@ -309,13 +309,14 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
 
           // 주 선택
           Container(
-            padding: EdgeInsets.all(16.w),
+            padding: EdgeInsets.all(12.w),
             decoration: BoxDecoration(
               color: Colors.blue[50],
               borderRadius: BorderRadius.circular(12.r),
               border: Border.all(color: Colors.blue[200]!),
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -348,8 +349,8 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
                           _showWeeklyGoalDialog();
                         },
                         child: Container(
-                          margin: EdgeInsets.symmetric(horizontal: 4.w),
-                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          margin: EdgeInsets.symmetric(horizontal: 2.w),
+                          padding: EdgeInsets.symmetric(vertical: 8.h),
                           decoration: BoxDecoration(
                             color: isSelected ? Colors.blue[600] : Colors.white,
                             borderRadius: BorderRadius.circular(8.r),
@@ -363,6 +364,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
                             'week$week',
                             textAlign: TextAlign.center,
                             style: TextStyle(
+                              fontSize: 12.sp,
                               color: isSelected
                                   ? Colors.white
                                   : Colors.blue[600],
@@ -821,7 +823,7 @@ class _GoalCreationWizardState extends State<GoalCreationWizard> {
                 Navigator.pop(context);
               }
             },
-             child: const Text('추가', style: TextStyle(color: Colors.black)),
+            child: const Text('추가', style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
