@@ -513,10 +513,7 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
-                '취소',
-                style: TextStyle(color: Colors.grey),
-              ),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -541,10 +538,7 @@ class _MonthlyGoalDetailPageState extends State<MonthlyGoalDetailPage> {
                   );
                 }
               },
-              child: const Text(
-                '추가',
-                style: TextStyle(color: Colors.black87),
-              ),
+              child: const Text('추가', style: TextStyle(color: Colors.black87)),
             ),
           ],
         ),

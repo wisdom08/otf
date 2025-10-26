@@ -392,10 +392,8 @@ class HomeTab extends StatelessWidget {
     }
 
     // 월간 목표만 표시 (최근 생성된 순으로 정렬)
-    final monthlyGoals = goals
-        .where((g) => g.type == GoalType.monthly)
-        .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final monthlyGoals = goals.where((g) => g.type == GoalType.monthly).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     if (monthlyGoals.isEmpty) {
       return const Center(
@@ -786,18 +784,13 @@ class _GoalTabState extends State<GoalTab> {
 
   @override
   Widget build(BuildContext context) {
-    final monthlyGoals = _goals
-        .where((g) => g.type == GoalType.monthly)
-        .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final weeklyGoals = _goals
-        .where((g) => g.type == GoalType.weekly)
-        .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final dailyGoals = _goals
-        .where((g) => g.type == GoalType.daily)
-        .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final monthlyGoals =
+        _goals.where((g) => g.type == GoalType.monthly).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final weeklyGoals = _goals.where((g) => g.type == GoalType.weekly).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final dailyGoals = _goals.where((g) => g.type == GoalType.daily).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return Scaffold(
       backgroundColor: Colors.black,

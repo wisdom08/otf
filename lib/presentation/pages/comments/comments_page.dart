@@ -8,7 +8,10 @@ class CommentsPage extends StatefulWidget {
   final Reflection? reflection;
 
   const CommentsPage({super.key, this.goal, this.reflection})
-      : assert(goal != null || reflection != null, 'Either goal or reflection must be provided');
+    : assert(
+        goal != null || reflection != null,
+        'Either goal or reflection must be provided',
+      );
 
   @override
   State<CommentsPage> createState() => _CommentsPageState();
@@ -27,9 +30,9 @@ class _CommentsPageState extends State<CommentsPage> {
   void _loadComments() {
     final targetId = widget.goal?.id ?? widget.reflection!.id;
     setState(() {
-      _comments = GoalService.getSocialActions(targetId)
-          .where((action) => action.type == SocialActionType.comment)
-          .toList();
+      _comments = GoalService.getSocialActions(
+        targetId,
+      ).where((action) => action.type == SocialActionType.comment).toList();
       _comments.sort((a, b) => b.createdAt.compareTo(a.createdAt)); // 최신순
     });
   }
@@ -61,16 +64,16 @@ class _CommentsPageState extends State<CommentsPage> {
                 Container(
                   padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
-                    color: widget.goal != null 
+                    color: widget.goal != null
                         ? _getTypeColor(widget.goal!.type).withOpacity(0.1)
                         : Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(
-                    widget.goal != null 
+                    widget.goal != null
                         ? _getTypeIcon(widget.goal!.type)
                         : Icons.psychology,
-                    color: widget.goal != null 
+                    color: widget.goal != null
                         ? _getTypeColor(widget.goal!.type)
                         : Colors.orange,
                     size: 20.sp,
@@ -142,10 +145,7 @@ class _CommentsPageState extends State<CommentsPage> {
                 Expanded(
                   child: TextField(
                     controller: _commentController,
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16.sp,
-                    ),
+                    style: TextStyle(color: Colors.black, fontSize: 16.sp),
                     decoration: InputDecoration(
                       hintText: '댓글을 입력하세요...',
                       hintStyle: TextStyle(
@@ -208,10 +208,7 @@ class _CommentsPageState extends State<CommentsPage> {
           SizedBox(height: 6.h),
           Text(
             '첫 번째 댓글을 남겨보세요!',
-            style: TextStyle(
-              fontSize: 12.sp, 
-              color: Colors.white70,
-            ),
+            style: TextStyle(fontSize: 12.sp, color: Colors.white70),
             textAlign: TextAlign.center,
           ),
         ],
@@ -348,10 +345,7 @@ class _CommentsPageState extends State<CommentsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(
-          '댓글 삭제',
-          style: TextStyle(color: Colors.black),
-        ),
+        title: const Text('댓글 삭제', style: TextStyle(color: Colors.black)),
         content: const Text(
           '이 댓글을 삭제하시겠습니까?',
           style: TextStyle(color: Colors.black),
@@ -359,10 +353,7 @@ class _CommentsPageState extends State<CommentsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              '취소',
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text('취소', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
